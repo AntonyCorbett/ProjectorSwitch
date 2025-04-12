@@ -8,19 +8,21 @@ struct FindWindowsResult
     bool IsRunning = false;
     bool FoundDesktop = false;
     bool FoundMediaWindow = false;
-    std::wstring BespokeErrorMsg = L"";
-    std::vector<IUIAutomationElement*> Elements;
+    std::wstring BespokeErrorMsg;
+    IUIAutomationElement* Element;
 
-    ~FindWindowsResult() 
+    FindWindowsResult()
+        : Element(nullptr)
     {
-        for (auto element : Elements) 
+
+    }
+
+    ~FindWindowsResult()
+    {
+        if (Element != nullptr)
         {
-            if (element != nullptr) 
-            {
-                element->Release();
-            }
+            Element->Release();
         }
-        Elements.clear();
     }
 };
 

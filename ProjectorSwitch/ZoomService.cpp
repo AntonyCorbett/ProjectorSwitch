@@ -58,21 +58,14 @@ DisplayWindowResult ZoomService::Display()
 		return result;
 	}
 
-	if (findWindowsResult.Elements.size() == 0)
-	{
-		result.AllOk = false;
-		result.ErrorMessage = L"Could not find any Zoom windows!";
-		return result;
-	}
-
-	if (!findWindowsResult.FoundMediaWindow)
+	if (findWindowsResult.Element == nullptr || !findWindowsResult.FoundMediaWindow)
 	{
 		result.AllOk = false;
 		result.ErrorMessage = L"Could not find Zoom media window!";
 		return result;
 	}
 		
-	IUIAutomationElement* mediaWindow = findWindowsResult.Elements[0];
+	IUIAutomationElement* mediaWindow = findWindowsResult.Element;
 	mediaWindow->get_CurrentBoundingRectangle(&mediaWindowOriginalPosition);
 
 	UIA_HWND windowHandle;
@@ -107,7 +100,7 @@ void ZoomService::Hide()
 		return;
 	}
 
-	IUIAutomationElement* mediaWindow = findWindowsResult.Elements[0];
+	IUIAutomationElement* mediaWindow = findWindowsResult.Element;
 
 	UIA_HWND windowHandle;
 	mediaWindow->get_CurrentNativeWindowHandle(&windowHandle);
@@ -161,16 +154,16 @@ void ZoomService::InternalDisplay(HWND windowHandle, RECT mediaMonitorRect)
 
 	const bool topMost = true;
 
-	const int adjustment = 34; // adjustment for titlebar
+	const int adjustmentTop = 54; // adjustment for titlebar	
 	const int border = 8; // adjustment for borders
 
 	SetWindowPos(
 		windowHandle, 
 		topMost ? HWND_TOPMOST : HWND_NOTOPMOST,
 		mediaMonitorRect.left - border,
-		mediaMonitorRect.top - adjustment,
+		mediaMonitorRect.top - adjustmentTop,
 		(mediaMonitorRect.right - mediaMonitorRect.left) + (border * 2),
-		(mediaMonitorRect.bottom - mediaMonitorRect.top) + adjustment + border,		
+		(mediaMonitorRect.bottom - mediaMonitorRect.top) + adjustmentTop + (border * 2),		
 		SWP_NOCOPYBITS | SWP_NOSENDCHANGING | SWP_SHOWWINDOW);
 }
 
@@ -237,7 +230,7 @@ FindWindowsResult ZoomService::FindMediaWindow()
 	IUIAutomationElement* mediaWindow = LocateZoomMediaWindow();
 	if (mediaWindow != nullptr)
 	{
-		result.Elements.push_back(mediaWindow);
+		result.Element = mediaWindow;
 		result.FoundMediaWindow = true;
 	}
 	else
