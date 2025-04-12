@@ -1,0 +1,29 @@
+#pragma once
+#include "AutomationService.h"
+#include "FindWindowsResult.h"
+#include "ProcessesService.h"
+#include "DisplayWindowResult.h"
+
+class ZoomService
+{
+public:
+	ZoomService(AutomationService *automationService, ProcessesService *processesService);
+	~ZoomService();
+
+	DisplayWindowResult Display();
+	void Hide();
+
+private:
+	RECT mediaWindowOriginalPosition;
+	IUIAutomationElement* cachedDesktopWindow;
+
+	AutomationService* automationService;
+	ProcessesService* processesService;	
+	FindWindowsResult FindMediaWindow();
+	IUIAutomationElement* LocateZoomMediaWindow();
+	RECT GetTargetMonitorRect();
+	RECT GetPrimaryMonitorRect();
+	void InternalDisplay(HWND windowHandle, RECT mediaMonitorRect);
+	const void InternalHide(HWND windowHandle);
+};
+
