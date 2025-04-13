@@ -9,6 +9,7 @@
 #include "MonitorService.h"
 #include "SettingsService.h"
 #include "ZoomService.h"
+#include "WindowPlacementService.h"
 
 constexpr int MAX_LOADSTRING = 100;
 constexpr int ButtonWidth = 60;
@@ -103,6 +104,20 @@ ATOM ProjectSwitchRegisterClass(HINSTANCE hInstance)
 	return RegisterClassExW(&wcex);
 }
 
+void SaveWindowPosition(HWND hWnd)
+{
+	SettingsService ss;
+	WindowPlacementService wps(&ss);
+	wps.SaveWindowPlace(hWnd);
+}
+
+void RestoreWindowPosition(HWND hwnd)
+{
+	SettingsService ss;
+	WindowPlacementService wps(&ss);
+	wps.RestoreWindowPlace(hwnd);
+}
+
 BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
 	CurrentInstance = hInstance; // Store instance handle in our global variable
@@ -125,6 +140,8 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 		return FALSE;
 	}
 
+	RestoreWindowPosition(hWnd);
+
 	ShowWindow(hWnd, nCmdShow);
 	UpdateWindow(hWnd);
 
@@ -136,7 +153,7 @@ static HWND CreateButton(HWND parent)
 	return CreateWindowW(
 		L"BUTTON",
 		L"ZOOM",		
-		WS_TABSTOP | WS_VISIBLE | WS_CHILD,
+		WS_TABSTOP | WS_VISIBLE | WS_CHILD | WS_DISABLED,
 		10, // x position 
 		10, // y position 
 		ButtonWidth, // Button width
@@ -171,6 +188,7 @@ static void SelectMonitor(HWND ComboBoxHandle)
 		{
 			SendMessage(ComboBoxHandle, CB_SETCURSEL, index, 0);
 			found = true;
+			EnableWindow(BtnHandle, true);
 			break;
 		}
 
@@ -179,8 +197,9 @@ static void SelectMonitor(HWND ComboBoxHandle)
 
 	if (!found)
 	{
+		// clear
 		SendMessage(ComboBoxHandle, CB_SETCURSEL, -1, 0);
-	}
+	}	
 }
 
 static HWND CreateComboBox(HWND parent)
@@ -267,7 +286,6 @@ void HandleResize(HWND hwnd, LPARAM lParam)
 	MoveWindow(ComboBoxHandle, x, y, rcCombo.right - rcCombo.left, rcCombo.bottom - rcCombo.top, 1);
 }
 
-
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	switch (message)
@@ -287,7 +305,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	}
 
 	case WM_CREATE:
-		BtnHandle = CreateButton(hWnd);
+		BtnHandle = CreateButton(hWnd);		
 		ComboBoxHandle = CreateComboBox(hWnd);
 		SetModernFont(hWnd);
 		TheZoomService = std::unique_ptr<ZoomService>(new ZoomService(new AutomationService(), new ProcessesService()));
@@ -314,6 +332,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				if (selectedIndex != CB_ERR)
 				{
 					SaveSelectedMonitorId(selectedIndex);
+					EnableWindow(BtnHandle, true);
 				}
 			}
 			break;
@@ -334,6 +353,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	}
 	break;
 	case WM_DESTROY:
+		SaveWindowPosition(hWnd);
 		if (ModernFont)
 		{
 			DeleteObject(ModernFont);

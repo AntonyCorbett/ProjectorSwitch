@@ -1,3 +1,2 @@
-1. Save and restore main window position
-2. Displable button if no monitors selected
-3. Better error handling
+1. Better error handling
+2. Implement mutex for single instance of app
