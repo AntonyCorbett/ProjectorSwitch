@@ -7,34 +7,32 @@
 
 std::wstring ZoomProcessName = L"Zoom.exe";
 
-ZoomService::ZoomService(
-	AutomationService* automationService, 
-	ProcessesService *processesService)
-{
-	this->cachedDesktopWindow = nullptr;
-	this->automationService = automationService;
-	this->processesService = processesService;
-	this->mediaWindowOriginalPosition = RECT();
+ZoomService::ZoomService(AutomationService* automationService, ProcessesService *processesService)
+	: cachedDesktopWindow_(nullptr)
+	, automationService_(automationService)
+	, processesService_(processesService)
+	, mediaWindowOriginalPosition_({ 0 })
+{	
 }
 
 ZoomService::~ZoomService()
 {
-	if (cachedDesktopWindow != nullptr)
+	if (cachedDesktopWindow_ != nullptr)
 	{
-		cachedDesktopWindow->Release();
-		cachedDesktopWindow = nullptr;
+		cachedDesktopWindow_->Release();
+		cachedDesktopWindow_ = nullptr;
 	}
 
-	if (automationService != nullptr)
+	if (automationService_ != nullptr)
 	{
-		delete automationService;
-		automationService = nullptr;
+		delete automationService_;
+		automationService_ = nullptr;
 	}
 
-	if (processesService != nullptr)
+	if (processesService_ != nullptr)
 	{
-		delete processesService;
-		processesService = nullptr;
+		delete processesService_;
+		processesService_ = nullptr;
 	}
 }
 
@@ -42,7 +40,7 @@ DisplayWindowResult ZoomService::Display()
 {
 	DisplayWindowResult result;
 		
-	FindWindowsResult findWindowsResult = FindMediaWindow();
+	auto findWindowsResult = FindMediaWindow();
 
 	if (!findWindowsResult.BespokeErrorMsg.empty())
 	{
@@ -65,13 +63,13 @@ DisplayWindowResult ZoomService::Display()
 		return result;
 	}
 		
-	IUIAutomationElement* mediaWindow = findWindowsResult.Element;
-	mediaWindow->get_CurrentBoundingRectangle(&mediaWindowOriginalPosition);
+	auto mediaWindow = findWindowsResult.Element;
+	mediaWindow->get_CurrentBoundingRectangle(&mediaWindowOriginalPosition_);
 
 	UIA_HWND windowHandle;
 	mediaWindow->get_CurrentNativeWindowHandle(&windowHandle);
 
-	RECT mediaMonitorRect = GetTargetMonitorRect();
+	auto mediaMonitorRect = GetTargetMonitorRect();
 	if (IsRectEmpty(&mediaMonitorRect))
 	{
 		result.AllOk = false;
@@ -91,7 +89,7 @@ DisplayWindowResult ZoomService::Display()
 
 void ZoomService::Hide()
 {
-	FindWindowsResult findWindowsResult = FindMediaWindow();
+	auto findWindowsResult = FindMediaWindow();
 
 	if (!findWindowsResult.BespokeErrorMsg.empty() ||
 		!findWindowsResult.IsRunning ||
@@ -100,7 +98,7 @@ void ZoomService::Hide()
 		return;
 	}
 
-	IUIAutomationElement* mediaWindow = findWindowsResult.Element;
+	auto mediaWindow = findWindowsResult.Element;
 
 	UIA_HWND windowHandle;
 	mediaWindow->get_CurrentNativeWindowHandle(&windowHandle);
@@ -112,15 +110,15 @@ const void ZoomService::InternalHide(HWND windowHandle)
 {	
 	SetForegroundWindow(windowHandle);
 
-	const bool topMost = false;
+	const auto topMost = false;
 
 	SetWindowPos(
 		windowHandle,
 		HWND_NOTOPMOST,
-		mediaWindowOriginalPosition.left,
-		mediaWindowOriginalPosition.top,
-		mediaWindowOriginalPosition.right - mediaWindowOriginalPosition.left,
-		mediaWindowOriginalPosition.bottom - mediaWindowOriginalPosition.top,
+		mediaWindowOriginalPosition_.left,
+		mediaWindowOriginalPosition_.top,
+		mediaWindowOriginalPosition_.right - mediaWindowOriginalPosition_.left,
+		mediaWindowOriginalPosition_.bottom - mediaWindowOriginalPosition_.top,
 		SWP_NOCOPYBITS | SWP_NOSENDCHANGING | SWP_SHOWWINDOW);
 }
 
@@ -128,18 +126,18 @@ RECT ZoomService::GetPrimaryMonitorRect()
 {
 	MonitorService monitorService;
 
-	std::vector<MonitorData> monitorData = monitorService.GetMonitorsData();
-	for (std::vector<MonitorData>::iterator i = monitorData.begin(); i != monitorData.end(); ++i)
+	auto monitorData = monitorService.GetMonitorsData();
+	for (auto& i : monitorData)
 	{
-		if (i->IsPrimary)
+		if (i.IsPrimary)
 		{
-			if (IsRectEmpty(&i->WorkRect))
+			if (IsRectEmpty(&i.WorkRect))
 			{
-				return i->MonitorRect;
+				return i.MonitorRect;
 			}
 			else
 			{
-				return i->WorkRect;
+				return i.WorkRect;
 			}
 		}
 	}
@@ -152,10 +150,10 @@ void ZoomService::InternalDisplay(HWND windowHandle, RECT mediaMonitorRect)
 	ShowWindow(windowHandle, SW_NORMAL);
 	SetForegroundWindow(windowHandle);
 
-	const bool topMost = true;
+	const auto topMost = true;
 
-	const int adjustmentTop = 54; // adjustment for titlebar	
-	const int border = 8; // adjustment for borders
+	const auto adjustmentTop = 54; // adjustment for titlebar	
+	const auto border = 8; // adjustment for borders
 
 	SetWindowPos(
 		windowHandle, 
@@ -171,7 +169,7 @@ RECT ZoomService::GetTargetMonitorRect()
 {
 	SettingsService settingsService;
 
-	int monitorId = settingsService.LoadSelectedMonitorId();
+	auto monitorId = settingsService.LoadSelectedMonitorId();
 	if (monitorId == -1)
 	{
 		return RECT();
@@ -179,12 +177,12 @@ RECT ZoomService::GetTargetMonitorRect()
 
 	MonitorService monitorService;
 
-	std::vector<MonitorData> monitorData = monitorService.GetMonitorsData();
-	for (std::vector<MonitorData>::iterator i = monitorData.begin(); i != monitorData.end(); ++i)
+	auto monitorData = monitorService.GetMonitorsData();
+	for (auto& i : monitorData)
 	{
-		if (i->Id == monitorId)
+		if (i.Id == monitorId)
 		{
-			return i->MonitorRect;
+			return i.MonitorRect;
 		}
 	}
 
@@ -195,27 +193,27 @@ FindWindowsResult ZoomService::FindMediaWindow()
 {
 	FindWindowsResult result;
 
-	if (automationService == nullptr)
+	if (automationService_ == nullptr)
 	{
 		result.BespokeErrorMsg = L"AutomationService is not initialized.";
 		return result;
 	}
 
-	if (cachedDesktopWindow == nullptr)
+	if (cachedDesktopWindow_ == nullptr)
 	{
-		IUIAutomationElement* desktop = automationService->DesktopElement();
+		IUIAutomationElement* desktop = automationService_->DesktopElement();
 		if (desktop == nullptr)
 		{
 			result.BespokeErrorMsg = L"Failed to get Desktop Element.";
 			return result;
 		}	
 
-		cachedDesktopWindow = desktop;
+		cachedDesktopWindow_ = desktop;
 	}
 
 	result.FoundDesktop = true;
 
-	std::vector<HANDLE> zoomProcesses = processesService->GetProcessesByName(ZoomProcessName);
+	auto zoomProcesses = processesService_->GetProcessesByName(ZoomProcessName);
 	switch (zoomProcesses.size())
 	{
 	case 0:
@@ -227,7 +225,7 @@ FindWindowsResult ZoomService::FindMediaWindow()
 
 	result.IsRunning = true;
 
-	IUIAutomationElement* mediaWindow = LocateZoomMediaWindow();
+	auto mediaWindow = LocateZoomMediaWindow();
 	if (mediaWindow != nullptr)
 	{
 		result.Element = mediaWindow;
@@ -235,7 +233,7 @@ FindWindowsResult ZoomService::FindMediaWindow()
 	}
 	else
 	{
-		// todo: log error
+		OutputDebugString(L"Could not get Zoom window!");
 	}
 
 	return result;
@@ -243,7 +241,7 @@ FindWindowsResult ZoomService::FindMediaWindow()
 
 IUIAutomationElement* ZoomService::LocateZoomMediaWindow()
 {
-	if (cachedDesktopWindow == nullptr)
+	if (cachedDesktopWindow_ == nullptr)
 	{
 		return nullptr;
 	}
@@ -251,7 +249,7 @@ IUIAutomationElement* ZoomService::LocateZoomMediaWindow()
 	// Find the Zoom media window by searching for the specific class name and name.
 	// The class name and name may vary based on the Zoom version and configuration.
 	
-	IUIAutomation* pAutomation = automationService->GetAutomationInterface();
+	auto pAutomation = automationService_->GetAutomationInterface();
 	
 	VariantWrapper varName;
 	varName.SetString(L"Zoom Workplace");
@@ -275,7 +273,7 @@ IUIAutomationElement* ZoomService::LocateZoomMediaWindow()
 	AutomationConditionWrapper andConditionWrapper(andCondition);
 
 	IUIAutomationElement* mediaWindow = nullptr;
-	cachedDesktopWindow->FindFirst(TreeScope_Children, andConditionWrapper.GetCondition(), &mediaWindow);
+	cachedDesktopWindow_->FindFirst(TreeScope_Children, andConditionWrapper.GetCondition(), &mediaWindow);
 	
 	return mediaWindow;
 }

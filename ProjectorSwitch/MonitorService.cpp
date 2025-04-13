@@ -10,15 +10,15 @@ std::vector<MonitorData> MonitorService::GetMonitorsData()
 {
     std::vector<MonitorData> returnData;
 
-    std::vector<MONITORINFOEX> monitorInfo = GetMonitorsInfo();
-    std::vector<DisplayConfigData> displayInfo = GetDisplayConfigInfo();
+    auto monitorInfo = GetMonitorsInfo();
+    auto displayInfo = GetDisplayConfigInfo();
 
 	if (monitorInfo.size() != displayInfo.size())
 	{
 		throw std::runtime_error("Monitor and display config data size mismatch");
 	}
 
-	for (size_t i = 0; i < monitorInfo.size(); ++i)
+    for (size_t i = 0; i < monitorInfo.size(); ++i)
 	{
 		MonitorData data(monitorInfo[i], displayInfo[i]);
 		returnData.push_back(data);
@@ -30,7 +30,7 @@ std::vector<MonitorData> MonitorService::GetMonitorsData()
 
 BOOL MyEnumMonitorProc(HMONITOR monitor, HDC hdc, LPRECT rect, LPARAM lparam)
 {
-    std::vector<MONITORINFOEX>* monitors = (std::vector<MONITORINFOEX>*)lparam;
+    auto monitors = (std::vector<MONITORINFOEX>*)lparam;
 
     MONITORINFOEX info;
     info.cbSize = sizeof(MONITORINFOEX);
@@ -59,12 +59,14 @@ std::vector<DisplayConfigData> MonitorService::GetDisplayConfigInfo()
     std::vector<DISPLAYCONFIG_PATH_INFO> paths;
     std::vector<DISPLAYCONFIG_MODE_INFO> modes;
     UINT32 flags = QDC_ONLY_ACTIVE_PATHS | QDC_VIRTUAL_MODE_AWARE;
-    LONG result = ERROR_SUCCESS;
+    auto result = ERROR_SUCCESS;
 
     do
     {
         // Determine how many path and mode structures to allocate
-        UINT32 pathCount, modeCount;
+        UINT32 pathCount;
+        UINT32 modeCount;
+
         result = GetDisplayConfigBufferSizes(flags, &pathCount, &modeCount);
 
         if (result != ERROR_SUCCESS)

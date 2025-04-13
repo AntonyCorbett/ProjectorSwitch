@@ -1,7 +1,7 @@
 #include "SettingsService.h"
 
-const WCHAR* SETTINGS_SECTION = L"Settings";
-const WCHAR* SELECTED_MONITOR_ID = L"SelectedMonitorId";
+const std::wstring SETTINGS_SECTION = L"Settings";
+const std::wstring SELECTED_MONITOR_ID = L"SelectedMonitorId";
 std::wstring PathToFile;
 
 SettingsService::SettingsService()
@@ -28,7 +28,7 @@ int SettingsService::LoadSelectedMonitorId()
 
 void SettingsService::SaveString(const std::wstring& key, const std::wstring& value)
 {
-	WritePrivateProfileString(SETTINGS_SECTION, key.c_str(), value.c_str(), PathToFile.c_str());
+	WritePrivateProfileString(SETTINGS_SECTION.c_str(), key.c_str(), value.c_str(), PathToFile.c_str());
 }
 
 void SettingsService::SaveInt(const std::wstring& key, const int value)
@@ -40,13 +40,13 @@ void SettingsService::SaveInt(const std::wstring& key, const int value)
 std::wstring SettingsService::LoadString(const std::wstring& key)
 {
 	WCHAR buffer[256];
-	GetPrivateProfileString(SETTINGS_SECTION, key.c_str(), L"", buffer, sizeof(buffer) / sizeof(WCHAR), PathToFile.c_str());
+	GetPrivateProfileString(SETTINGS_SECTION.c_str(), key.c_str(), L"", buffer, sizeof(buffer) / sizeof(WCHAR), PathToFile.c_str());
 	return std::wstring(buffer);
 }
 
 int SettingsService::LoadInt(const std::wstring& key, int defaultValue)
 {
-	std::wstring value = LoadString(key);
+	auto value = LoadString(key);
 	if (value.empty())
 	{
 		return defaultValue;

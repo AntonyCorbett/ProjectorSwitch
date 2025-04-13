@@ -3,6 +3,12 @@
 
 struct DisplayWindowResult
 {
-    bool AllOk = false;
-    std::wstring ErrorMessage = L"";
+    bool AllOk;
+    std::wstring ErrorMessage;
+
+    DisplayWindowResult()
+        : AllOk(false)        
+    {
+
+    }
 };

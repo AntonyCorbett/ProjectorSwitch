@@ -6,17 +6,18 @@
 struct MonitorData
 {
 	MonitorData()
+		: Id(0)
+		, IsPrimary(false)
+		, MonitorRect({ 0 })
+		, WorkRect({ 0 })
 	{
 		::ZeroMemory(this, sizeof(MonitorData));
-		Id = 0;
-		MonitorRect = { 0 };
-		WorkRect = { 0 };
-		IsPrimary = false;
 	}
 
 	MonitorData(MONITORINFOEX monitorInfoEx, DisplayConfigData displayConfigData)
 	{
 		::ZeroMemory(this, sizeof(MonitorData));
+
 		Id = displayConfigData.Id;
 		FriendlyName = displayConfigData.FriendlyName;
 		DevicePath = displayConfigData.DevicePath;

@@ -5,8 +5,8 @@
 struct DisplayConfigData
 {
 	DisplayConfigData()
-	{
-		Id = 0;
+		: Id(0)
+	{		
 	}
 
 	DisplayConfigData(UINT id, const WCHAR* friendlyName, const WCHAR* devicePath)

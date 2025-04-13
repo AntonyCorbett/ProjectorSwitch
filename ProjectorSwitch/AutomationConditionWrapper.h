@@ -4,26 +4,26 @@
 class AutomationConditionWrapper
 {
 private:
-	IUIAutomationCondition* condition;
+	IUIAutomationCondition* condition_;
 
 public:
 	AutomationConditionWrapper(IUIAutomationCondition* condition)
-	{
-		this->condition = condition;
+		: condition_(condition)
+	{		
 	}
 
 	~AutomationConditionWrapper()
 	{
-		if (condition != nullptr)
+		if (condition_ != nullptr)
 		{
-			condition->Release();
-			condition = nullptr;
+			condition_->Release();
+			condition_ = nullptr;
 		}
 	}
 
 	IUIAutomationCondition* GetCondition()
 	{
-		return condition;
+		return condition_;
 	}
 };
 

@@ -5,16 +5,18 @@
 
 struct FindWindowsResult
 {
-    bool IsRunning = false;
-    bool FoundDesktop = false;
-    bool FoundMediaWindow = false;
+    bool IsRunning;
+    bool FoundDesktop;
+    bool FoundMediaWindow;
     std::wstring BespokeErrorMsg;
     IUIAutomationElement* Element;
 
     FindWindowsResult()
         : Element(nullptr)
+        , IsRunning(false)
+        , FoundDesktop(false)
+        , FoundMediaWindow(false)
     {
-
     }
 
     ~FindWindowsResult()

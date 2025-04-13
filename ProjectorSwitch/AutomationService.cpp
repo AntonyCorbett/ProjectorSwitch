@@ -1,9 +1,11 @@
 #include "AutomationService.h"
 
 AutomationService::AutomationService()
+	: automation_(nullptr)
+	, desktopElement_(nullptr)
 {
 	// Initialize COM library
-	HRESULT hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
+	auto hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
 
 	if (SUCCEEDED(hr))
 	{
@@ -28,8 +30,7 @@ AutomationService::AutomationService()
 			NULL,
 			CLSCTX_INPROC_SERVER,
 			IID_IUIAutomation,
-			(void**)&pAutomation
-		);
+			(void**)&automation_);
 
 		if (SUCCEEDED(hr))
 		{
@@ -40,16 +41,16 @@ AutomationService::AutomationService()
 
 AutomationService::~AutomationService()
 {
-	if (pDesktopElement)
+	if (desktopElement_)
 	{
-		pDesktopElement->Release();
-		pDesktopElement = nullptr;
+		desktopElement_->Release();
+		desktopElement_ = nullptr;
 	}
 
-	if (pAutomation)
+	if (automation_)
 	{
-		pAutomation->Release();
-		pAutomation = nullptr;
+		automation_->Release();
+		automation_ = nullptr;
 	}
 
 	CoUninitialize();
@@ -57,10 +58,10 @@ AutomationService::~AutomationService()
 
 void AutomationService::LocateDesktop()
 {
-	HRESULT hr = pAutomation->GetRootElement(&pDesktopElement);
+	auto hr = automation_->GetRootElement(&desktopElement_);
 	if (!SUCCEEDED(hr))
 	{
-		// todo: error message
-		pDesktopElement = nullptr;
+		OutputDebugString(L"Could not get desktop element!");
+		desktopElement_ = nullptr;
 	}
 }

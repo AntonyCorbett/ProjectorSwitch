@@ -14,11 +14,11 @@ public:
 	void Hide();
 
 private:
-	RECT mediaWindowOriginalPosition;
-	IUIAutomationElement* cachedDesktopWindow;
+	RECT mediaWindowOriginalPosition_;
+	IUIAutomationElement* cachedDesktopWindow_;
+	AutomationService* automationService_;
+	ProcessesService* processesService_;	
 
-	AutomationService* automationService;
-	ProcessesService* processesService;	
 	FindWindowsResult FindMediaWindow();
 	IUIAutomationElement* LocateZoomMediaWindow();
 	RECT GetTargetMonitorRect();

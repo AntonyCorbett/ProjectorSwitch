@@ -4,9 +4,8 @@
 class AutomationService
 {
 private:
-	IUIAutomation* pAutomation = nullptr;
-		
-	IUIAutomationElement* pDesktopElement = nullptr;
+	IUIAutomation* automation_;
+	IUIAutomationElement* desktopElement_;
 
 	void LocateDesktop();
 
@@ -16,11 +15,11 @@ public:
 
 	IUIAutomation* GetAutomationInterface()
 	{
-		return pAutomation;
+		return automation_;
 	}
 
 	IUIAutomationElement* DesktopElement()
 	{
-		return pDesktopElement;
+		return desktopElement_;
 	}
 };
