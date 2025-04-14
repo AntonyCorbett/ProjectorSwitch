@@ -79,9 +79,6 @@ DisplayWindowResult ZoomService::Display()
 
 	InternalDisplay((HWND)windowHandle, mediaMonitorRect);
 
-	mediaWindow->Release();
-	mediaWindow = nullptr;
-
 	result.AllOk = true;
 	
 	return result;
@@ -106,11 +103,49 @@ void ZoomService::Hide()
 	InternalHide((HWND)windowHandle);	
 }
 
+bool ZoomService::IsDisplayed()
+{
+	auto findWindowsResult = FindMediaWindow();
+	if (!findWindowsResult.FoundMediaWindow)
+	{
+		return false;
+	}
+
+	auto mediaWindow = findWindowsResult.Element;
+	if (mediaWindow == nullptr)
+	{
+		return false;
+	}
+
+	auto mediaMonitorRect = GetTargetMonitorRect();
+	if (IsRectEmpty(&mediaMonitorRect))
+	{
+		return false;
+	}
+
+	RECT mediaWindowPos;
+	mediaWindow->get_CurrentBoundingRectangle(&mediaWindowPos);
+
+	RECT targetRect = CalculateTargetRect(mediaMonitorRect);
+
+	return EqualRect(&targetRect, &mediaWindowPos);
+}
+
 const void ZoomService::InternalHide(HWND windowHandle)
 {	
 	SetForegroundWindow(windowHandle);
 
 	const auto topMost = false;
+
+	if (IsRectEmpty(&mediaWindowOriginalPosition_))
+	{		
+		// fabricate a suitable location on the primary monitor
+		RECT primaryMonitorRect = GetPrimaryMonitorRect();
+		mediaWindowOriginalPosition_.left = primaryMonitorRect.left + 10;
+		mediaWindowOriginalPosition_.top = primaryMonitorRect.top + 10;
+		mediaWindowOriginalPosition_.right = mediaWindowOriginalPosition_.left + 450;
+		mediaWindowOriginalPosition_.bottom = mediaWindowOriginalPosition_.top + 300;
+	}
 
 	SetWindowPos(
 		windowHandle,
@@ -145,6 +180,20 @@ RECT ZoomService::GetPrimaryMonitorRect()
 	return RECT();
 }
 
+RECT ZoomService::CalculateTargetRect(RECT mediaMonitorRect)
+{
+	const auto adjustmentTop = 54; // adjustment for titlebar	
+	const auto border = 8; // adjustment for borders
+
+	RECT result;
+	result.left = mediaMonitorRect.left - border;
+	result.top = mediaMonitorRect.top - adjustmentTop;
+	result.right = mediaMonitorRect.right + (border * 2);
+	result.bottom = mediaMonitorRect.bottom + adjustmentTop + (border * 2);
+
+	return result;
+}
+
 void ZoomService::InternalDisplay(HWND windowHandle, RECT mediaMonitorRect)
 {
 	ShowWindow(windowHandle, SW_NORMAL);
@@ -152,16 +201,15 @@ void ZoomService::InternalDisplay(HWND windowHandle, RECT mediaMonitorRect)
 
 	const auto topMost = true;
 
-	const auto adjustmentTop = 54; // adjustment for titlebar	
-	const auto border = 8; // adjustment for borders
+	RECT targetRect = CalculateTargetRect(mediaMonitorRect);
 
 	SetWindowPos(
 		windowHandle, 
 		topMost ? HWND_TOPMOST : HWND_NOTOPMOST,
-		mediaMonitorRect.left - border,
-		mediaMonitorRect.top - adjustmentTop,
-		(mediaMonitorRect.right - mediaMonitorRect.left) + (border * 2),
-		(mediaMonitorRect.bottom - mediaMonitorRect.top) + adjustmentTop + (border * 2),		
+		targetRect.left,
+		targetRect.top,
+		targetRect.right - targetRect.left,
+		targetRect.bottom - targetRect.top,		
 		SWP_NOCOPYBITS | SWP_NOSENDCHANGING | SWP_SHOWWINDOW);
 }
 

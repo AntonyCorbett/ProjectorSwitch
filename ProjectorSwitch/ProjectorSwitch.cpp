@@ -252,7 +252,7 @@ static void SetModernFont(HWND mainWindow)
 
 static void ToggleZoomWindow()
 {
-	if (TheDisplayWindowResult != nullptr && TheDisplayWindowResult->AllOk)
+	if ((TheDisplayWindowResult != nullptr && TheDisplayWindowResult->AllOk) || TheZoomService->IsDisplayed())
 	{
 		// Hide the window
 		TheZoomService->Hide();
