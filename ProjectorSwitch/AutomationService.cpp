@@ -5,7 +5,7 @@ AutomationService::AutomationService()
 	, desktopElement_(nullptr)
 {
 	// Initialize COM library
-	auto hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
+	HRESULT hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
 
 	if (SUCCEEDED(hr))
 	{
@@ -58,7 +58,7 @@ AutomationService::~AutomationService()
 
 void AutomationService::LocateDesktop()
 {
-	auto hr = automation_->GetRootElement(&desktopElement_);
+	HRESULT hr = automation_->GetRootElement(&desktopElement_);
 	if (!SUCCEEDED(hr))
 	{
 		OutputDebugString(L"Could not get desktop element!");

@@ -40,7 +40,7 @@ DisplayWindowResult ZoomService::Display()
 {
 	DisplayWindowResult result;
 		
-	auto findWindowsResult = FindMediaWindow();
+	FindWindowsResult findWindowsResult = FindMediaWindow();
 
 	if (!findWindowsResult.BespokeErrorMsg.empty())
 	{
@@ -63,7 +63,7 @@ DisplayWindowResult ZoomService::Display()
 		return result;
 	}
 		
-	auto mediaWindow = findWindowsResult.Element;
+	IUIAutomationElement* mediaWindow = findWindowsResult.Element;
 	mediaWindow->get_CurrentBoundingRectangle(&mediaWindowOriginalPosition_);
 
 	UIA_HWND windowHandle;
@@ -86,7 +86,7 @@ DisplayWindowResult ZoomService::Display()
 
 void ZoomService::Hide()
 {
-	auto findWindowsResult = FindMediaWindow();
+	FindWindowsResult findWindowsResult = FindMediaWindow();
 
 	if (!findWindowsResult.BespokeErrorMsg.empty() ||
 		!findWindowsResult.IsRunning ||
@@ -95,7 +95,7 @@ void ZoomService::Hide()
 		return;
 	}
 
-	auto mediaWindow = findWindowsResult.Element;
+	IUIAutomationElement* mediaWindow = findWindowsResult.Element;
 
 	UIA_HWND windowHandle;
 	mediaWindow->get_CurrentNativeWindowHandle(&windowHandle);
@@ -105,13 +105,13 @@ void ZoomService::Hide()
 
 bool ZoomService::IsDisplayed()
 {
-	auto findWindowsResult = FindMediaWindow();
+	FindWindowsResult findWindowsResult = FindMediaWindow();
 	if (!findWindowsResult.FoundMediaWindow)
 	{
 		return false;
 	}
 
-	auto mediaWindow = findWindowsResult.Element;
+	IUIAutomationElement* mediaWindow = findWindowsResult.Element;
 	if (mediaWindow == nullptr)
 	{
 		return false;
@@ -161,7 +161,7 @@ RECT ZoomService::GetPrimaryMonitorRect()
 {
 	MonitorService monitorService;
 
-	auto monitorData = monitorService.GetMonitorsData();
+	std::vector<MonitorData> monitorData = monitorService.GetMonitorsData();
 	for (auto& i : monitorData)
 	{
 		if (i.IsPrimary)
@@ -217,18 +217,18 @@ RECT ZoomService::GetTargetMonitorRect()
 {
 	SettingsService settingsService;
 
-	auto monitorId = settingsService.LoadSelectedMonitorId();
-	if (monitorId == -1)
+	std::wstring monitorDeviceName = settingsService.LoadSelectedMonitor();
+	if (monitorDeviceName.empty())
 	{
 		return RECT();
 	}
 
 	MonitorService monitorService;
 
-	auto monitorData = monitorService.GetMonitorsData();
+	std::vector<MonitorData> monitorData = monitorService.GetMonitorsData();
 	for (auto& i : monitorData)
 	{
-		if (i.Id == monitorId)
+		if (i.DeviceName == monitorDeviceName)
 		{
 			return i.MonitorRect;
 		}
@@ -261,7 +261,7 @@ FindWindowsResult ZoomService::FindMediaWindow()
 
 	result.FoundDesktop = true;
 
-	auto zoomProcesses = processesService_->GetProcessesByName(ZoomProcessName);
+	std::vector<HANDLE> zoomProcesses = processesService_->GetProcessesByName(ZoomProcessName);
 	switch (zoomProcesses.size())
 	{
 	case 0:
@@ -273,7 +273,7 @@ FindWindowsResult ZoomService::FindMediaWindow()
 
 	result.IsRunning = true;
 
-	auto mediaWindow = LocateZoomMediaWindow();
+	IUIAutomationElement* mediaWindow = LocateZoomMediaWindow();
 	if (mediaWindow != nullptr)
 	{
 		result.Element = mediaWindow;
@@ -297,7 +297,7 @@ IUIAutomationElement* ZoomService::LocateZoomMediaWindow()
 	// Find the Zoom media window by searching for the specific class name and name.
 	// The class name and name may vary based on the Zoom version and configuration.
 	
-	auto pAutomation = automationService_->GetAutomationInterface();
+	IUIAutomation* pAutomation = automationService_->GetAutomationInterface();
 	
 	VariantWrapper varName;
 	varName.SetString(L"Zoom Workplace");

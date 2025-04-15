@@ -24,6 +24,7 @@ struct FindWindowsResult
         if (Element != nullptr)
         {
             Element->Release();
+            Element = nullptr;
         }
     }
 };

@@ -1,7 +1,7 @@
 #include "SettingsService.h"
 
 const std::wstring SETTINGS_SECTION = L"SETTINGS";
-const std::wstring SELECTED_MONITOR_ID = L"SelectedMonitorId";
+const std::wstring SELECTED_MONITOR_DEVICE_NAME = L"SelectedMonitor";
 
 const std::wstring WINDOW_SECTION = L"WINDOW";
 const std::wstring SHOW_CMD = L"ShowCmd";
@@ -29,16 +29,16 @@ SettingsService::~SettingsService()
 
 void SettingsService::SaveWindowPlacement(WINDOWPLACEMENT placement)
 {
-	SaveInt(WINDOW_SECTION, SHOW_CMD, placement.showCmd);
-	SaveInt(WINDOW_SECTION, FLAGS, placement.flags);
-	SaveInt(WINDOW_SECTION, MIN_POS_X, placement.ptMinPosition.x);
-	SaveInt(WINDOW_SECTION, MIN_POS_Y, placement.ptMinPosition.y);
-	SaveInt(WINDOW_SECTION, MAX_POS_X, placement.ptMaxPosition.x);
-	SaveInt(WINDOW_SECTION, MAX_POS_Y, placement.ptMaxPosition.y);
-	SaveInt(WINDOW_SECTION, POS_LEFT, placement.rcNormalPosition.left);
-	SaveInt(WINDOW_SECTION, POS_TOP, placement.rcNormalPosition.top);
-	SaveInt(WINDOW_SECTION, POS_RIGHT, placement.rcNormalPosition.right);
-	SaveInt(WINDOW_SECTION, POS_BOTTOM, placement.rcNormalPosition.bottom);
+	InternalSaveInt(WINDOW_SECTION, SHOW_CMD, placement.showCmd);
+	InternalSaveInt(WINDOW_SECTION, FLAGS, placement.flags);
+	InternalSaveInt(WINDOW_SECTION, MIN_POS_X, placement.ptMinPosition.x);
+	InternalSaveInt(WINDOW_SECTION, MIN_POS_Y, placement.ptMinPosition.y);
+	InternalSaveInt(WINDOW_SECTION, MAX_POS_X, placement.ptMaxPosition.x);
+	InternalSaveInt(WINDOW_SECTION, MAX_POS_Y, placement.ptMaxPosition.y);
+	InternalSaveInt(WINDOW_SECTION, POS_LEFT, placement.rcNormalPosition.left);
+	InternalSaveInt(WINDOW_SECTION, POS_TOP, placement.rcNormalPosition.top);
+	InternalSaveInt(WINDOW_SECTION, POS_RIGHT, placement.rcNormalPosition.right);
+	InternalSaveInt(WINDOW_SECTION, POS_BOTTOM, placement.rcNormalPosition.bottom);
 }
 
 WINDOWPLACEMENT SettingsService::LoadWindowPlacement()
@@ -46,42 +46,42 @@ WINDOWPLACEMENT SettingsService::LoadWindowPlacement()
 	WINDOWPLACEMENT wp;
 	wp.length = sizeof(wp);
 
-	wp.showCmd = LoadInt(WINDOW_SECTION, SHOW_CMD, 0);
-	wp.flags = LoadInt(WINDOW_SECTION, FLAGS, 0);
-	wp.ptMinPosition.x = LoadInt(WINDOW_SECTION, MIN_POS_X, 0);
-	wp.ptMinPosition.y = LoadInt(WINDOW_SECTION, MIN_POS_Y, 0);
-	wp.ptMaxPosition.x = LoadInt(WINDOW_SECTION, MAX_POS_X, 0);
-	wp.ptMaxPosition.y = LoadInt(WINDOW_SECTION, MAX_POS_Y, 0);
-	wp.rcNormalPosition.left = LoadInt(WINDOW_SECTION, POS_LEFT, 0);
-	wp.rcNormalPosition.top = LoadInt(WINDOW_SECTION, POS_TOP, 0);
-	wp.rcNormalPosition.right = LoadInt(WINDOW_SECTION, POS_RIGHT, 0);
-	wp.rcNormalPosition.bottom = LoadInt(WINDOW_SECTION, POS_BOTTOM, 0);
+	wp.showCmd = InternalLoadInt(WINDOW_SECTION, SHOW_CMD, 0);
+	wp.flags = InternalLoadInt(WINDOW_SECTION, FLAGS, 0);
+	wp.ptMinPosition.x = InternalLoadInt(WINDOW_SECTION, MIN_POS_X, 0);
+	wp.ptMinPosition.y = InternalLoadInt(WINDOW_SECTION, MIN_POS_Y, 0);
+	wp.ptMaxPosition.x = InternalLoadInt(WINDOW_SECTION, MAX_POS_X, 0);
+	wp.ptMaxPosition.y = InternalLoadInt(WINDOW_SECTION, MAX_POS_Y, 0);
+	wp.rcNormalPosition.left = InternalLoadInt(WINDOW_SECTION, POS_LEFT, 0);
+	wp.rcNormalPosition.top = InternalLoadInt(WINDOW_SECTION, POS_TOP, 0);
+	wp.rcNormalPosition.right = InternalLoadInt(WINDOW_SECTION, POS_RIGHT, 0);
+	wp.rcNormalPosition.bottom = InternalLoadInt(WINDOW_SECTION, POS_BOTTOM, 0);
 
 	return wp;
 }
 
-void SettingsService::SaveSelectedMonitorId(const int monitorId)
+void SettingsService::SaveSelectedMonitor(std::wstring monitorDeviceName)
 {
-	SaveInt(SETTINGS_SECTION, SELECTED_MONITOR_ID, monitorId);
+	InternalSaveString(SETTINGS_SECTION, SELECTED_MONITOR_DEVICE_NAME, monitorDeviceName);
 }
 
-int SettingsService::LoadSelectedMonitorId()
+std::wstring SettingsService::LoadSelectedMonitor()
 {
-	return LoadInt(SETTINGS_SECTION, SELECTED_MONITOR_ID, -1);
+	return InternalLoadString(SETTINGS_SECTION, SELECTED_MONITOR_DEVICE_NAME);
 }
 
-void SettingsService::SaveString(const std::wstring& section, const std::wstring& key, const std::wstring& value)
+void SettingsService::InternalSaveString(const std::wstring& section, const std::wstring& key, const std::wstring& value)
 {
 	WritePrivateProfileString(section.c_str(), key.c_str(), value.c_str(), pathToFile_.c_str());
 }
 
-void SettingsService::SaveInt(const std::wstring& section, const std::wstring& key, const int value)
+void SettingsService::InternalSaveInt(const std::wstring& section, const std::wstring& key, const int value)
 {
 	std::wstring strValue = std::to_wstring(value);
-	SaveString(section.c_str(), key.c_str(), strValue.c_str());
+	InternalSaveString(section.c_str(), key.c_str(), strValue.c_str());
 }
 
-std::wstring SettingsService::LoadString(const std::wstring& section, const std::wstring& key)
+std::wstring SettingsService::InternalLoadString(const std::wstring& section, const std::wstring& key)
 {
 	WCHAR buffer[256];
 	GetPrivateProfileString(
@@ -94,9 +94,9 @@ std::wstring SettingsService::LoadString(const std::wstring& section, const std:
 	return std::wstring(buffer);
 }
 
-int SettingsService::LoadInt(const std::wstring& section, const std::wstring& key, int defaultValue)
+int SettingsService::InternalLoadInt(const std::wstring& section, const std::wstring& key, int defaultValue)
 {
-	auto value = LoadString(section, key);
+	auto value = InternalLoadString(section, key);
 	if (value.empty())
 	{
 		return defaultValue;

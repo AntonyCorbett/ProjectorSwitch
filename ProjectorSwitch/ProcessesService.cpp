@@ -9,7 +9,7 @@ std::vector<HANDLE> ProcessesService::GetProcessesByName(std::wstring name)
    DWORD pid = 0;  
 
    // Create toolhelp snapshot.  
-   auto snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);  
+   HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);  
    if (snapshot == INVALID_HANDLE_VALUE)
    {
        OutputDebugString(L"Could not get process snapshot!");

@@ -9,8 +9,8 @@ public:
 	SettingsService();
 	~SettingsService();
 
-	void SaveSelectedMonitorId(const int monitorId);
-	int LoadSelectedMonitorId();
+	void SaveSelectedMonitor(std::wstring monitorDeviceName);
+	std::wstring LoadSelectedMonitor();
 
 	void SaveWindowPlacement(WINDOWPLACEMENT placement);
 	WINDOWPLACEMENT LoadWindowPlacement();
@@ -18,10 +18,10 @@ public:
 private:
 	std::wstring pathToFile_;
 
-	void SaveString(const std::wstring& section, const std::wstring& key, const std::wstring& value);
-	void SaveInt(const std::wstring& section, const std::wstring& key, const int value);
+	void InternalSaveString(const std::wstring& section, const std::wstring& key, const std::wstring& value);
+	void InternalSaveInt(const std::wstring& section, const std::wstring& key, const int value);
 
-	std::wstring LoadString(const std::wstring& section, const std::wstring& key);
-	int LoadInt(const std::wstring& section, const std::wstring& key, int defaultValue);
+	std::wstring InternalLoadString(const std::wstring& section, const std::wstring& key);
+	int InternalLoadInt(const std::wstring& section, const std::wstring& key, int defaultValue);
 };
 
