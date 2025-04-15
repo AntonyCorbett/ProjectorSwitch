@@ -5,13 +5,12 @@
 #include "MonitorData.h"
 #include "DisplayConfigData.h"
 
-
 std::vector<MonitorData> MonitorService::GetMonitorsData()
 {
     std::vector<MonitorData> returnData;
 
-    auto monitorInfo = GetMonitorsInfo();
-    auto displayInfo = GetDisplayConfigInfo();
+    std::vector<MONITORINFOEX> monitorInfo = GetMonitorsInfo();
+    std::vector<DisplayConfigData> displayInfo = GetDisplayConfigInfo();
 
 	if (monitorInfo.size() != displayInfo.size())
 	{
@@ -20,8 +19,8 @@ std::vector<MonitorData> MonitorService::GetMonitorsData()
 
     for (size_t i = 0; i < monitorInfo.size(); ++i)
 	{
-		MonitorData data(monitorInfo[i], displayInfo[i]);
-		returnData.push_back(data);
+        MonitorData data(monitorInfo[i], displayInfo[i]);
+        returnData.push_back(data);        
 	}
 
     return returnData;
@@ -46,7 +45,7 @@ BOOL MyEnumMonitorProc(HMONITOR monitor, HDC hdc, LPRECT rect, LPARAM lparam)
 std::vector<MONITORINFOEX> MonitorService::GetMonitorsInfo()
 {
 	std::vector<MONITORINFOEX> monitors;
-
+    
     EnumDisplayMonitors(NULL, NULL, MyEnumMonitorProc, (LPARAM) &monitors);
 
 	return monitors;
@@ -98,6 +97,7 @@ std::vector<DisplayConfigData> MonitorService::GetDisplayConfigInfo()
     for (auto& path : paths)
     {
         // Find the target (monitor) friendly name
+
         DISPLAYCONFIG_TARGET_DEVICE_NAME targetName = {};
         targetName.header.adapterId = path.targetInfo.adapterId;
         targetName.header.id = path.targetInfo.id;
@@ -122,11 +122,11 @@ std::vector<DisplayConfigData> MonitorService::GetDisplayConfigInfo()
         {
             throw std::runtime_error("Failed to get adapter device name");
         }
-                
-		returnData.push_back(DisplayConfigData(
-			path.targetInfo.id,
+        
+        returnData.push_back(DisplayConfigData(
+            path.targetInfo.id,
             targetName.flags.friendlyNameFromEdid ? targetName.monitorFriendlyDeviceName : L"Unknown",
-			adapterName.adapterDevicePath));        
+            adapterName.adapterDevicePath));
     }
 
     return returnData;

@@ -1,3 +1,2 @@
 1. Better error handling
 2. Implement mutex for single instance of app
-3. Check monitor selection code (sometimes wrong monitor is chosen)

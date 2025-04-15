@@ -178,13 +178,13 @@ static void AddMonitorsToCombo(HWND ComboBoxHandleBox)
 static void SelectMonitor(HWND ComboBoxHandle)
 {
 	SettingsService ss;
-	std::wstring monitorDeviceName = ss.LoadSelectedMonitor();
+	RECT rect = ss.LoadSelectedMonitorRect();
 
 	auto index = 0;
 	auto found = false;
 	for (auto& i : TheMonitorData)	
 	{
-		if (i.DeviceName == monitorDeviceName)
+		if (EqualRect(&i.MonitorRect, &rect))
 		{
 			SendMessage(ComboBoxHandle, CB_SETCURSEL, index, 0);
 			found = true;
@@ -236,7 +236,7 @@ static void SaveSelectedMonitorId(int selectedIndex)
 {
 	MonitorData md = TheMonitorData[selectedIndex];
 	SettingsService ss;
-	ss.SaveSelectedMonitor(md.DeviceName);
+	ss.SaveSelectedMonitorRect(md.MonitorRect);
 }
 
 static void SetModernFont(HWND mainWindow)

@@ -1,7 +1,10 @@
 #include "SettingsService.h"
 
 const std::wstring SETTINGS_SECTION = L"SETTINGS";
-const std::wstring SELECTED_MONITOR_DEVICE_NAME = L"SelectedMonitor";
+const std::wstring SELECTED_MONITOR_L = L"SelectedMonitorL";
+const std::wstring SELECTED_MONITOR_T = L"SelectedMonitorT";
+const std::wstring SELECTED_MONITOR_R = L"SelectedMonitorR";
+const std::wstring SELECTED_MONITOR_B = L"SelectedMonitorB";
 
 const std::wstring WINDOW_SECTION = L"WINDOW";
 const std::wstring SHOW_CMD = L"ShowCmd";
@@ -60,14 +63,24 @@ WINDOWPLACEMENT SettingsService::LoadWindowPlacement()
 	return wp;
 }
 
-void SettingsService::SaveSelectedMonitor(std::wstring monitorDeviceName)
+void SettingsService::SaveSelectedMonitorRect(RECT rect)
 {
-	InternalSaveString(SETTINGS_SECTION, SELECTED_MONITOR_DEVICE_NAME, monitorDeviceName);
+	InternalSaveInt(SETTINGS_SECTION, SELECTED_MONITOR_L, rect.left);
+	InternalSaveInt(SETTINGS_SECTION, SELECTED_MONITOR_T, rect.top);
+	InternalSaveInt(SETTINGS_SECTION, SELECTED_MONITOR_R, rect.right);
+	InternalSaveInt(SETTINGS_SECTION, SELECTED_MONITOR_B, rect.bottom);
 }
 
-std::wstring SettingsService::LoadSelectedMonitor()
+RECT SettingsService::LoadSelectedMonitorRect()
 {
-	return InternalLoadString(SETTINGS_SECTION, SELECTED_MONITOR_DEVICE_NAME);
+	RECT rect;
+
+	rect.left = InternalLoadInt(SETTINGS_SECTION, SELECTED_MONITOR_L, 0);
+	rect.top = InternalLoadInt(SETTINGS_SECTION, SELECTED_MONITOR_T, 0);
+	rect.right = InternalLoadInt(SETTINGS_SECTION, SELECTED_MONITOR_R, 0);
+	rect.bottom = InternalLoadInt(SETTINGS_SECTION, SELECTED_MONITOR_B, 0);
+
+	return rect;
 }
 
 void SettingsService::InternalSaveString(const std::wstring& section, const std::wstring& key, const std::wstring& value)

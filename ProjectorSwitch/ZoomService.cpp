@@ -216,25 +216,7 @@ void ZoomService::InternalDisplay(HWND windowHandle, RECT mediaMonitorRect)
 RECT ZoomService::GetTargetMonitorRect()
 {
 	SettingsService settingsService;
-
-	std::wstring monitorDeviceName = settingsService.LoadSelectedMonitor();
-	if (monitorDeviceName.empty())
-	{
-		return RECT();
-	}
-
-	MonitorService monitorService;
-
-	std::vector<MonitorData> monitorData = monitorService.GetMonitorsData();
-	for (auto& i : monitorData)
-	{
-		if (i.DeviceName == monitorDeviceName)
-		{
-			return i.MonitorRect;
-		}
-	}
-
-	return RECT();
+	return settingsService.LoadSelectedMonitorRect();
 }
 
 FindWindowsResult ZoomService::FindMediaWindow()

@@ -5,7 +5,7 @@
 struct DisplayConfigData
 {
 	DisplayConfigData()
-		: Id(0)
+		: Id(0)		
 	{		
 	}
 

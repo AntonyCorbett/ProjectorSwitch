@@ -9,8 +9,8 @@ public:
 	SettingsService();
 	~SettingsService();
 
-	void SaveSelectedMonitor(std::wstring monitorDeviceName);
-	std::wstring LoadSelectedMonitor();
+	void SaveSelectedMonitorRect(RECT rect);
+	RECT LoadSelectedMonitorRect();
 
 	void SaveWindowPlacement(WINDOWPLACEMENT placement);
 	WINDOWPLACEMENT LoadWindowPlacement();
