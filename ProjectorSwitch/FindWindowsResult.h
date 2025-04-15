@@ -15,7 +15,7 @@ struct FindWindowsResult
         : Element(nullptr)
         , IsRunning(false)
         , FoundDesktop(false)
-        , FoundMediaWindow(false)
+        , FoundMediaWindow(false)        
     {
     }
 

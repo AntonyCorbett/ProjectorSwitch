@@ -10,22 +10,20 @@ public:
 	ZoomService(AutomationService *automationService, ProcessesService *processesService);
 	~ZoomService();
 
-	DisplayWindowResult Display();
-	void Hide();
-	bool IsDisplayed();
+	DisplayWindowResult Toggle();
 
 private:
 	RECT mediaWindowOriginalPosition_;
-	IUIAutomationElement* cachedDesktopWindow_;
+	IUIAutomationElement* cachedDesktopWindow_;	
 	AutomationService* automationService_;
-	ProcessesService* processesService_;	
+	ProcessesService* processesService_;		
 		
 	FindWindowsResult FindMediaWindow();
 	IUIAutomationElement* LocateZoomMediaWindow();
 	RECT GetTargetMonitorRect();
 	RECT GetPrimaryMonitorRect();
-	void InternalDisplay(HWND windowHandle, RECT mediaMonitorRect);
+	void InternalDisplay(HWND windowHandle, RECT targetRect);
 	const void InternalHide(HWND windowHandle);
-	RECT CalculateTargetRect(RECT mediaMonitorRect);
+	RECT CalculateTargetRect(RECT mediaMonitorRect, HWND windowHandle);
 };
 

@@ -11,7 +11,7 @@ ZoomService::ZoomService(AutomationService* automationService, ProcessesService 
 	: cachedDesktopWindow_(nullptr)
 	, automationService_(automationService)
 	, processesService_(processesService)
-	, mediaWindowOriginalPosition_({ 0 })
+	, mediaWindowOriginalPosition_({ 0 })	
 {	
 }
 
@@ -36,10 +36,10 @@ ZoomService::~ZoomService()
 	}
 }
 
-DisplayWindowResult ZoomService::Display()
+DisplayWindowResult ZoomService::Toggle()
 {
 	DisplayWindowResult result;
-		
+
 	FindWindowsResult findWindowsResult = FindMediaWindow();
 
 	if (!findWindowsResult.BespokeErrorMsg.empty())
@@ -62,12 +62,6 @@ DisplayWindowResult ZoomService::Display()
 		result.ErrorMessage = L"Could not find Zoom media window!";
 		return result;
 	}
-		
-	IUIAutomationElement* mediaWindow = findWindowsResult.Element;
-	mediaWindow->get_CurrentBoundingRectangle(&mediaWindowOriginalPosition_);
-
-	UIA_HWND windowHandle;
-	mediaWindow->get_CurrentNativeWindowHandle(&windowHandle);
 
 	auto mediaMonitorRect = GetTargetMonitorRect();
 	if (IsRectEmpty(&mediaMonitorRect))
@@ -77,84 +71,25 @@ DisplayWindowResult ZoomService::Display()
 		return result;
 	}
 
-	InternalDisplay((HWND)windowHandle, mediaMonitorRect);
-
-	result.AllOk = true;
-	
-	return result;
-}
-
-void ZoomService::Hide()
-{
-	FindWindowsResult findWindowsResult = FindMediaWindow();
-
-	if (!findWindowsResult.BespokeErrorMsg.empty() ||
-		!findWindowsResult.IsRunning ||
-		!findWindowsResult.FoundMediaWindow)		
-	{
-		return;
-	}
-
-	IUIAutomationElement* mediaWindow = findWindowsResult.Element;
-
 	UIA_HWND windowHandle;
-	mediaWindow->get_CurrentNativeWindowHandle(&windowHandle);
-
-	InternalHide((HWND)windowHandle);	
-}
-
-bool ZoomService::IsDisplayed()
-{
-	FindWindowsResult findWindowsResult = FindMediaWindow();
-	if (!findWindowsResult.FoundMediaWindow)
-	{
-		return false;
-	}
-
-	IUIAutomationElement* mediaWindow = findWindowsResult.Element;
-	if (mediaWindow == nullptr)
-	{
-		return false;
-	}
-
-	auto mediaMonitorRect = GetTargetMonitorRect();
-	if (IsRectEmpty(&mediaMonitorRect))
-	{
-		return false;
-	}
+	findWindowsResult.Element->get_CurrentNativeWindowHandle(&windowHandle);
 
 	RECT mediaWindowPos;
-	mediaWindow->get_CurrentBoundingRectangle(&mediaWindowPos);
+	findWindowsResult.Element->get_CurrentBoundingRectangle(&mediaWindowPos);
+	RECT targetRect = CalculateTargetRect(mediaMonitorRect, (HWND)windowHandle);
 
-	RECT targetRect = CalculateTargetRect(mediaMonitorRect);
-
-	return EqualRect(&targetRect, &mediaWindowPos);
-}
-
-const void ZoomService::InternalHide(HWND windowHandle)
-{	
-	SetForegroundWindow(windowHandle);
-
-	const auto topMost = false;
-
-	if (IsRectEmpty(&mediaWindowOriginalPosition_))
-	{		
-		// fabricate a suitable location on the primary monitor
-		RECT primaryMonitorRect = GetPrimaryMonitorRect();
-		mediaWindowOriginalPosition_.left = primaryMonitorRect.left + 10;
-		mediaWindowOriginalPosition_.top = primaryMonitorRect.top + 10;
-		mediaWindowOriginalPosition_.right = mediaWindowOriginalPosition_.left + 450;
-		mediaWindowOriginalPosition_.bottom = mediaWindowOriginalPosition_.top + 300;
+	if (EqualRect(&targetRect, &mediaWindowPos))
+	{
+		// already displayed
+		InternalHide((HWND)windowHandle);		
+	}
+	else
+	{
+		mediaWindowOriginalPosition_ = mediaWindowPos;
+		InternalDisplay((HWND)windowHandle, targetRect);
 	}
 
-	SetWindowPos(
-		windowHandle,
-		HWND_NOTOPMOST,
-		mediaWindowOriginalPosition_.left,
-		mediaWindowOriginalPosition_.top,
-		mediaWindowOriginalPosition_.right - mediaWindowOriginalPosition_.left,
-		mediaWindowOriginalPosition_.bottom - mediaWindowOriginalPosition_.top,
-		SWP_NOCOPYBITS | SWP_NOSENDCHANGING | SWP_SHOWWINDOW);
+	return result;
 }
 
 RECT ZoomService::GetPrimaryMonitorRect()
@@ -180,37 +115,92 @@ RECT ZoomService::GetPrimaryMonitorRect()
 	return RECT();
 }
 
-RECT ZoomService::CalculateTargetRect(RECT mediaMonitorRect)
+RECT ZoomService::CalculateTargetRect(RECT mediaMonitorRect, HWND mediaWindowHandle)
 {
-	const auto adjustmentTop = 54; // adjustment for titlebar	
-	const auto border = 8; // adjustment for borders
+	RECT mediaWindowClientRect;
+	GetClientRect(mediaWindowHandle, &mediaWindowClientRect);
+
+	RECT mediaWindowRect;
+	GetWindowRect(mediaWindowHandle, &mediaWindowRect);
+
+	auto clientWidth = mediaWindowClientRect.right - mediaWindowClientRect.left;
+	auto clientHeight = mediaWindowClientRect.bottom - mediaWindowClientRect.top;
+
+	auto windowWidth = mediaWindowRect.right - mediaWindowRect.left;
+	auto windowHeight = mediaWindowRect.bottom - mediaWindowRect.top;
+
+	auto xBorder = (windowWidth - clientWidth) / 2;
+	auto yBorder = (windowHeight - clientHeight) / 2;
 
 	RECT result;
-	result.left = mediaMonitorRect.left - border;
-	result.top = mediaMonitorRect.top - adjustmentTop;
-	result.right = mediaMonitorRect.right + (border * 2);
-	result.bottom = mediaMonitorRect.bottom + adjustmentTop + (border * 2);
+	result.left = mediaMonitorRect.left - xBorder;
+	result.top = mediaMonitorRect.top - yBorder;
+	result.right = mediaMonitorRect.right + (xBorder * 2);
+	result.bottom = mediaMonitorRect.bottom + (yBorder * 2);
 
 	return result;
 }
 
-void ZoomService::InternalDisplay(HWND windowHandle, RECT mediaMonitorRect)
+const void ZoomService::InternalHide(HWND windowHandle)
+{
+	SetForegroundWindow(windowHandle);
+
+	const auto topMost = false;
+
+	if (IsRectEmpty(&mediaWindowOriginalPosition_))
+	{
+		// fabricate a suitable location on the primary monitor
+		RECT primaryMonitorRect = GetPrimaryMonitorRect();
+		mediaWindowOriginalPosition_.left = primaryMonitorRect.left + 10;
+		mediaWindowOriginalPosition_.top = primaryMonitorRect.top + 10;
+		mediaWindowOriginalPosition_.right = mediaWindowOriginalPosition_.left + 450;
+		mediaWindowOriginalPosition_.bottom = mediaWindowOriginalPosition_.top + 300;
+	}
+
+	SetWindowPos(
+		windowHandle,
+		HWND_NOTOPMOST,
+		mediaWindowOriginalPosition_.left,
+		mediaWindowOriginalPosition_.top,
+		mediaWindowOriginalPosition_.right - mediaWindowOriginalPosition_.left,
+		mediaWindowOriginalPosition_.bottom - mediaWindowOriginalPosition_.top,
+		SWP_NOCOPYBITS | SWP_NOSENDCHANGING | SWP_SHOWWINDOW);
+}
+
+void ZoomService::InternalDisplay(HWND windowHandle, RECT targetRect)
 {
 	ShowWindow(windowHandle, SW_NORMAL);
 	SetForegroundWindow(windowHandle);
 
-	const auto topMost = true;
+	// I have tried  DeferWindowPos (see commented out code) but the move still flickers
+	
+	//HDWP deferHandle = BeginDeferWindowPos(1);
+	//if (deferHandle)
+	//{
+	//	deferHandle = DeferWindowPos(
+	//		deferHandle,
+	//		windowHandle,
+	//		NULL,
+	//		targetRect.left,
+	//		targetRect.top,
+	//		targetRect.right - targetRect.left,
+	//		targetRect.bottom - targetRect.top,
+	//		SWP_NOCOPYBITS | SWP_SHOWWINDOW);
 
-	RECT targetRect = CalculateTargetRect(mediaMonitorRect);
+	//	if (deferHandle)
+	//	{
+	//		EndDeferWindowPos(deferHandle);
+	//	}
+	//}
 
 	SetWindowPos(
 		windowHandle, 
-		topMost ? HWND_TOPMOST : HWND_NOTOPMOST,
+		HWND_TOPMOST,
 		targetRect.left,
 		targetRect.top,
 		targetRect.right - targetRect.left,
 		targetRect.bottom - targetRect.top,		
-		SWP_NOCOPYBITS | SWP_NOSENDCHANGING | SWP_SHOWWINDOW);
+		SWP_NOCOPYBITS | SWP_NOSENDCHANGING | SWP_SHOWWINDOW);	
 }
 
 RECT ZoomService::GetTargetMonitorRect()

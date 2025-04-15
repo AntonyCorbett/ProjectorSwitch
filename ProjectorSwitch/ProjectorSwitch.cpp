@@ -34,7 +34,6 @@ HWND ComboBoxHandle;
 HFONT ModernFont;
 std::vector<MonitorData> TheMonitorData;
 std::unique_ptr<ZoomService> TheZoomService;
-std::unique_ptr<DisplayWindowResult> TheDisplayWindowResult;
 
 // Forward declarations of functions included in this code module:
 ATOM ProjectSwitchRegisterClass(HINSTANCE hInstance);
@@ -252,17 +251,7 @@ static void SetModernFont(HWND mainWindow)
 
 static void ToggleZoomWindow()
 {
-	if ((TheDisplayWindowResult != nullptr && TheDisplayWindowResult->AllOk) || TheZoomService->IsDisplayed())
-	{
-		// Hide the window
-		TheZoomService->Hide();
-		TheDisplayWindowResult.reset();
-	}
-	else
-	{
-		// show the window				
-		TheDisplayWindowResult = std::unique_ptr<DisplayWindowResult>(new DisplayWindowResult(TheZoomService->Display()));
-	}	
+	TheZoomService->Toggle();	
 }
 
 void HandleResize(HWND hwnd, LPARAM lParam)
