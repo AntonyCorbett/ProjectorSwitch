@@ -125,7 +125,9 @@ std::vector<DisplayConfigData> MonitorService::GetDisplayConfigInfo()
         
         returnData.push_back(DisplayConfigData(
             path.targetInfo.id,
-            targetName.flags.friendlyNameFromEdid ? targetName.monitorFriendlyDeviceName : L"Unknown",
+            targetName.flags.friendlyNameFromEdid 
+                ? targetName.monitorFriendlyDeviceName 
+                : L"Unknown",
             adapterName.adapterDevicePath));
     }
 

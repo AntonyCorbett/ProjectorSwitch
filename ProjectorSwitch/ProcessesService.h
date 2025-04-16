@@ -3,10 +3,12 @@
 #include <TlHelp32.h>
 #include <string>
 #include <vector>
+#include <memory>
+#include "HandleDeleter.h"
 
 class ProcessesService
 {
 public:
-	std::vector<HANDLE> GetProcessesByName(std::wstring name);
+	std::vector<std::unique_ptr<void, HandleDeleter>> GetProcessesByName(std::wstring name);
 };
 

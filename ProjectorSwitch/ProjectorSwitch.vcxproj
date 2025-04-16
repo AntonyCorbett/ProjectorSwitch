@@ -135,6 +135,7 @@
   <ItemGroup>
     <ClInclude Include="AutomationConditionWrapper.h" />
     <ClInclude Include="AutomationService.h" />
+    <ClInclude Include="HandleDeleter.h" />
     <ClInclude Include="ProjectorSwitch.h" />
     <ClInclude Include="DisplayConfigData.h" />
     <ClInclude Include="DisplayWindowResult.h" />

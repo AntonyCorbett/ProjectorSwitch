@@ -233,7 +233,9 @@ FindWindowsResult ZoomService::FindMediaWindow()
 
 	result.FoundDesktop = true;
 
-	std::vector<HANDLE> zoomProcesses = processesService_->GetProcessesByName(ZoomProcessName);
+	std::vector<std::unique_ptr<void, HandleDeleter>> zoomProcesses = 
+		processesService_->GetProcessesByName(ZoomProcessName);
+
 	switch (zoomProcesses.size())
 	{
 	case 0:

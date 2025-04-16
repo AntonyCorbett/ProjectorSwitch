@@ -63,6 +63,9 @@
     <ClInclude Include="WindowPlacementService.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="HandleDeleter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ProjectorSwitch.cpp">

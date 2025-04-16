@@ -10,14 +10,11 @@ struct MonitorData
 		, IsPrimary(false)
 		, MonitorRect({ 0 })
 		, WorkRect({ 0 })
-	{
-		::ZeroMemory(this, sizeof(MonitorData));
+	{		
 	}
 
-	MonitorData(MONITORINFOEX monitorInfoEx, DisplayConfigData displayConfigData)
+	MonitorData(MONITORINFOEX &monitorInfoEx, DisplayConfigData& displayConfigData)
 	{
-		::ZeroMemory(this, sizeof(MonitorData));
-
 		Id = displayConfigData.Id;
 		FriendlyName = displayConfigData.FriendlyName;
 		DevicePath = displayConfigData.DevicePath;
