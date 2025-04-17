@@ -236,12 +236,8 @@ FindWindowsResult ZoomService::FindMediaWindow()
 	std::vector<std::unique_ptr<void, HandleDeleter>> zoomProcesses = 
 		processesService_->GetProcessesByName(ZoomProcessName);
 
-	switch (zoomProcesses.size())
+	if (zoomProcesses.empty())
 	{
-	case 0:
-		return result;
-	case 1:		
-		result.BespokeErrorMsg = L"Could not find Zoom's second window. Please use Zoom 'dual monitor' configuration";
 		return result;
 	}
 

@@ -34,7 +34,7 @@ std::vector<std::unique_ptr<void, HandleDeleter>> ProcessesService::GetProcesses
 				// Process found, add to result.  
 				HANDLE processHandle = OpenProcess(PROCESS_ALL_ACCESS, FALSE, process.th32ProcessID);
 				if (processHandle != NULL)
-				{
+				{					
 					result.push_back(std::unique_ptr<void, HandleDeleter>(processHandle));
 				}
 			}
