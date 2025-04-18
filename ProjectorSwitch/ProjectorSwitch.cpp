@@ -34,6 +34,7 @@ WCHAR MainWindowClass[MAX_LOADSTRING];
 HWND BtnHandle;
 HWND ComboBoxHandle;
 HFONT ModernFont;
+HWND MainWindowHandle;
 std::vector<MonitorData> TheMonitorData;
 std::unique_ptr<ZoomService> TheZoomService;
 std::wstring AppName = L"ApcProjSw";
@@ -130,28 +131,29 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
 	CurrentInstance = hInstance; // Store instance handle in our global variable
 
-	auto hWnd = CreateWindowW(
-		MainWindowClass, 
+	MainWindowHandle = CreateWindowExW(
+		WS_EX_TOPMOST,
+		MainWindowClass,
 		TitleBarCaption,
 		(WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN) ^ WS_MINIMIZEBOX ^ WS_MAXIMIZEBOX ^ WS_THICKFRAME,
-		CW_USEDEFAULT, 
-		CW_USEDEFAULT, 		
+		CW_USEDEFAULT,
+		CW_USEDEFAULT,
 		140,
-		155, 
-		nullptr, 
-		nullptr, 
-		hInstance, 
+		155,
+		nullptr,
+		nullptr,
+		hInstance,
 		nullptr);
 
-	if (!hWnd)
+	if (!MainWindowHandle)
 	{
 		return FALSE;
 	}
 
-	RestoreWindowPosition(hWnd);
+	RestoreWindowPosition(MainWindowHandle);
 
-	ShowWindow(hWnd, nCmdShow);
-	UpdateWindow(hWnd);
+	ShowWindow(MainWindowHandle, nCmdShow);
+	UpdateWindow(MainWindowHandle);
 
 	return TRUE;
 }
@@ -260,7 +262,8 @@ static void SetModernFont(HWND mainWindow)
 
 static void ToggleZoomWindow()
 {
-	TheZoomService->Toggle();	
+	TheZoomService->Toggle();
+	SetWindowPos(MainWindowHandle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 }
 
 void HandleResize(HWND hwnd, LPARAM lParam)
