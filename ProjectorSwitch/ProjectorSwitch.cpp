@@ -3,6 +3,7 @@
 #include "framework.h"
 #include <commctrl.h> // Include the header for common controls
 #include <strsafe.h>
+#include <atlbase.h>
 #include <string>
 #include <memory>
 #include <mutex>
@@ -35,19 +36,12 @@ HWND ComboBoxHandle;
 HFONT ModernFont;
 std::vector<MonitorData> TheMonitorData;
 std::unique_ptr<ZoomService> TheZoomService;
-HANDLE AppMutex;
 std::wstring AppName = L"ApcProjSw";
 
 // Forward declarations of functions included in this code module:
 ATOM ProjectSwitchRegisterClass(HINSTANCE hInstance);
 BOOL InitInstance(HINSTANCE, int);
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
-
-bool AnotherInstanceRunning()
-{
-	AppMutex = CreateMutex(NULL, true, AppName.c_str());
-	return (GetLastError() == ERROR_ALREADY_EXISTS);
-}
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	_In_opt_ HINSTANCE hPrevInstance,
@@ -57,7 +51,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	UNREFERENCED_PARAMETER(hPrevInstance);
 	UNREFERENCED_PARAMETER(lpCmdLine);
 
-	if (AnotherInstanceRunning())
+	CHandle appMutex(CreateMutex(NULL, true, AppName.c_str()));
+	if (GetLastError() == ERROR_ALREADY_EXISTS)	
 	{
 		return FALSE;
 	}
@@ -93,7 +88,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		}
 	}
 
-	CloseHandle(AppMutex);
 	return (int)msg.wParam;
 }
 

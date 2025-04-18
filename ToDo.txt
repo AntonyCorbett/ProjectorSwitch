@@ -1,2 +1,2 @@
 1. Better error handling/logging
-2. Implement mutex for single instance of app
+2. On Top
