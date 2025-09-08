@@ -1,14 +1,15 @@
 #pragma once
+#include <windows.h>
 #include <vector>
-#include "monitorData.h"
+#include "MonitorData.h"
 #include "DisplayConfigData.h"
 
 class MonitorService
 {
 public:	
-	std::vector<MonitorData> GetMonitorsData();
+	[[nodiscard]] std::vector<MonitorData> GetMonitorsData() const;
 	
 private:
-	std::vector<MONITORINFOEX> GetMonitorsInfo();
-	std::vector<DisplayConfigData> GetDisplayConfigInfo();
+	[[nodiscard]] static std::vector<MONITORINFOEX> GetMonitorsInfo();
+	[[nodiscard]] static std::vector<DisplayConfigData> GetDisplayConfigInfo();
 };
