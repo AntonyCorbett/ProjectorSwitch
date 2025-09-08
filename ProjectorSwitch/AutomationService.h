@@ -13,12 +13,12 @@ public:
 	AutomationService();
 	~AutomationService();
 
-	IUIAutomation* GetAutomationInterface()
+	IUIAutomation* GetAutomationInterface() const
 	{
 		return automation_;
 	}
 
-	IUIAutomationElement* DesktopElement()
+	IUIAutomationElement* DesktopElement() const
 	{
 		return desktopElement_;
 	}

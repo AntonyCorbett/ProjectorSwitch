@@ -1,7 +1,7 @@
 #pragma once
 #include <uiautomation.h>
 
-class AutomationConditionWrapper
+class AutomationConditionWrapper  // NOLINT(cppcoreguidelines-special-member-functions)
 {
 private:
 	IUIAutomationCondition* condition_;
@@ -21,7 +21,7 @@ public:
 		}
 	}
 
-	IUIAutomationCondition* GetCondition()
+	IUIAutomationCondition* GetCondition() const
 	{
 		return condition_;
 	}

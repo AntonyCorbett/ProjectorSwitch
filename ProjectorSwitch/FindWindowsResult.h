@@ -1,16 +1,15 @@
 #pragma once
 #include <string>
-#include <vector>
 #include <uiautomation.h>
 
-struct FindWindowsResult
+struct FindWindowsResult  // NOLINT(cppcoreguidelines-special-member-functions)
 {
+    IUIAutomationElement* Element;
     bool IsRunning;
     bool FoundDesktop;
     bool FoundMediaWindow;
     std::wstring BespokeErrorMsg;
-    IUIAutomationElement* Element;
-
+    
     FindWindowsResult()
         : Element(nullptr)
         , IsRunning(false)

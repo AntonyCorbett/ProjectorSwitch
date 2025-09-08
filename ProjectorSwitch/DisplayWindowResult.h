@@ -9,6 +9,5 @@ struct DisplayWindowResult
     DisplayWindowResult()
         : AllOk(false)        
     {
-
     }
 };

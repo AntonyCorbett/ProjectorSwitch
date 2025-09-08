@@ -2,53 +2,53 @@
 #include <atlstr.h>
 #include <string>
 
-class VariantWrapper
+class VariantWrapper  // NOLINT(cppcoreguidelines-special-member-functions)
 {
 private:
-	VARIANT variant;
+	VARIANT variant_;
 
 public:
 	VariantWrapper()
 	{		
-		VariantInit(&variant);
+		VariantInit(&variant_);
 	}
 
 	~VariantWrapper()
 	{
-		if (variant.vt != VT_EMPTY)
+		if (variant_.vt != VT_EMPTY)
 		{
-			VariantClear(&variant);
+			VariantClear(&variant_);
 		}
 	}
 
 	void SetString(const std::wstring& value)
 	{
-		variant.vt = VT_BSTR;
-		variant.bstrVal = SysAllocString(value.c_str());
+		variant_.vt = VT_BSTR;
+		variant_.bstrVal = SysAllocString(value.c_str());
 	}
 
 	void SetBool(bool value)
 	{
-		variant.vt = VT_BOOL;
-		variant.boolVal = value ? VARIANT_TRUE : VARIANT_FALSE;
+		variant_.vt = VT_BOOL;
+		variant_.boolVal = value ? VARIANT_TRUE : VARIANT_FALSE;
 	}
 
 	void SetInt(int value)
 	{
-		variant.vt = VT_I4;
-		variant.lVal = value;
+		variant_.vt = VT_I4;
+		variant_.lVal = value;
 	}
 
 	void SetDouble(double value)
 	{
-		variant.vt = VT_R8;
-		variant.dblVal = value;
+		variant_.vt = VT_R8;
+		variant_.dblVal = value;
 	}
 
 	void SetNull()
 	{
-		variant.vt = VT_NULL;
+		variant_.vt = VT_NULL;
 	}
 
-	operator VARIANT* () { return &variant; }
+	operator VARIANT* () { return &variant_; }
 };

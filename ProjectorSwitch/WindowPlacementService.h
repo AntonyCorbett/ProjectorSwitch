@@ -6,7 +6,7 @@ class WindowPlacementService
 {
 private:	
 	SettingsService* settingsService_;
-	bool IsValidPlacement(WINDOWPLACEMENT& placement);
+	static bool IsValidPlacement(const WINDOWPLACEMENT& placement);
 
 public:
 	WindowPlacementService(SettingsService* settingsService)
@@ -14,7 +14,7 @@ public:
 	{
 	}
 
-	void SaveWindowPlace(HWND mainWindow);
-	void RestoreWindowPlace(HWND mainWindow);
+	void SaveWindowPlace(HWND mainWindow) const;
+	void RestoreWindowPlace(HWND mainWindow) const;
 };
 

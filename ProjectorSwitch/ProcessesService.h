@@ -8,7 +8,7 @@
 
 class ProcessesService
 {
-public:
-	std::vector<std::unique_ptr<void, HandleDeleter>> GetProcessesByName(std::wstring name);
+	public:
+		std::vector<std::unique_ptr<void, HandleDeleter>> GetProcessesByName(const std::wstring& name);
 };
 

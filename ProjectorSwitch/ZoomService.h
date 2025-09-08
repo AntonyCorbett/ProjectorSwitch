@@ -4,13 +4,13 @@
 #include "ProcessesService.h"
 #include "DisplayWindowResult.h"
 
-class ZoomService
+class ZoomService  // NOLINT(cppcoreguidelines-special-member-functions)
 {
 public:
 	ZoomService(AutomationService *automationService, ProcessesService *processesService);
 	~ZoomService();
 
-	DisplayWindowResult Toggle();
+	DisplayWindowResult Toggle(bool fade);
 
 private:
 	RECT mediaWindowOriginalPosition_;
@@ -19,11 +19,13 @@ private:
 	ProcessesService* processesService_;		
 		
 	FindWindowsResult FindMediaWindow();
-	IUIAutomationElement* LocateZoomMediaWindow();
-	RECT GetTargetMonitorRect();
-	RECT GetPrimaryMonitorRect();
-	void InternalDisplay(HWND windowHandle, RECT targetRect);
-	const void InternalHide(HWND windowHandle);
-	RECT CalculateTargetRect(RECT mediaMonitorRect, HWND windowHandle);
+	IUIAutomationElement* LocateZoomMediaWindow() const;	
+	void InternalHide(HWND windowHandle);
+
+	static RECT GetTargetMonitorRect();
+	static RECT GetPrimaryMonitorRect();
+	static RECT CalculateTargetRect(RECT mediaMonitorRect, HWND mediaWindowHandle);
+	static void InternalDisplay(HWND windowHandle, RECT targetRect);
+	static void InternalDisplaySimple(const HWND windowHandle, const RECT targetRect);
 };
 

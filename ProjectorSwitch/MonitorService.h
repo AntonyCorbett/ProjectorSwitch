@@ -8,6 +8,8 @@ class MonitorService
 {
 public:	
 	[[nodiscard]] std::vector<MonitorData> GetMonitorsData() const;
+
+	static std::wstring TryGetMonitorSerialFromDevicePath(const std::wstring& devicePath);
 	
 private:
 	[[nodiscard]] static std::vector<MONITORINFOEX> GetMonitorsInfo();

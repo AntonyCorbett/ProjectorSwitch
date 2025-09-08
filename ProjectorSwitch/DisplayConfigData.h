@@ -9,7 +9,7 @@ struct DisplayConfigData
 	{		
 	}
 
-	DisplayConfigData(UINT id, const std::wstring friendlyName, const std::wstring devicePath)
+	DisplayConfigData(const UINT id, const std::wstring &friendlyName, const std::wstring &devicePath)
 	{
 		Id = id;
 		FriendlyName = friendlyName;

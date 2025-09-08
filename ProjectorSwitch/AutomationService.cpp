@@ -5,21 +5,21 @@ AutomationService::AutomationService()
 	, desktopElement_(nullptr)
 {
 	// Initialize COM library
-	HRESULT hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
+	HRESULT hr = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
 
 	if (SUCCEEDED(hr))
 	{
 		// Initialize COM library for UI Automation
 		hr = CoInitializeSecurity(
-			NULL,
+			nullptr,
 			-1,
-			NULL,
-			NULL,
+			nullptr,
+			nullptr,
 			RPC_C_AUTHN_LEVEL_DEFAULT,
 			RPC_C_IMP_LEVEL_IMPERSONATE,
-			NULL,
+			nullptr,
 			EOAC_NONE,
-			NULL
+			nullptr
 		);
 	}
 
@@ -27,10 +27,10 @@ AutomationService::AutomationService()
 	{
 		hr = CoCreateInstance(
 			CLSID_CUIAutomation,
-			NULL,
+			nullptr,
 			CLSCTX_INPROC_SERVER,
 			IID_IUIAutomation,
-			(void**)&automation_);
+			reinterpret_cast<void**>(&automation_));
 
 		if (SUCCEEDED(hr))
 		{

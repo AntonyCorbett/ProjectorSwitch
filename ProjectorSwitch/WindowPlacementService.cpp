@@ -1,7 +1,7 @@
 #include <Windows.h>
 #include "WindowPlacementService.h"
 
-void WindowPlacementService::SaveWindowPlace(HWND mainWindow)
+void WindowPlacementService::SaveWindowPlace(const HWND mainWindow) const
 {
     WINDOWPLACEMENT placement;
     placement.length = sizeof(WINDOWPLACEMENT);
@@ -10,28 +10,28 @@ void WindowPlacementService::SaveWindowPlace(HWND mainWindow)
     settingsService_->SaveWindowPlacement(placement);
 }
 
-bool WindowPlacementService::IsValidPlacement(WINDOWPLACEMENT& placement)
+bool WindowPlacementService::IsValidPlacement(const WINDOWPLACEMENT& placement)
 {
     return
         placement.rcNormalPosition.bottom - placement.rcNormalPosition.top > 0 &&
         placement.rcNormalPosition.right - placement.rcNormalPosition.left > 0;
 }
 
-void WindowPlacementService::RestoreWindowPlace(HWND mainWindow)
+void WindowPlacementService::RestoreWindowPlace(const HWND mainWindow) const
 {
     WINDOWPLACEMENT placement;
     placement.length = sizeof(WINDOWPLACEMENT);
 
     GetWindowPlacement(mainWindow, &placement);
 
-    auto storedPlacement = settingsService_->LoadWindowPlacement();
+    const auto storedPlacement = settingsService_->LoadWindowPlacement();
     if (!IsValidPlacement(storedPlacement))
     {
         return;
     }
 
-    auto normalWidth = placement.rcNormalPosition.right - placement.rcNormalPosition.left;
-    auto normalHeight = placement.rcNormalPosition.bottom - placement.rcNormalPosition.top;
+    const auto normalWidth = placement.rcNormalPosition.right - placement.rcNormalPosition.left;
+    const auto normalHeight = placement.rcNormalPosition.bottom - placement.rcNormalPosition.top;
 
     placement.showCmd = storedPlacement.showCmd;
     placement.flags = 0;
