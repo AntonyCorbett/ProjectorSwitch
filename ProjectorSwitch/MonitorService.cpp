@@ -61,8 +61,8 @@ namespace
         {
             if (iswalnum(c))
             {
-	            hasAlnum = true;
-            	break;
+                hasAlnum = true;
+                break;
             }
         }
 
@@ -79,14 +79,14 @@ namespace
             const BYTE ch = desc[5 + j];
             if (ch == 0x0A || ch == 0x00)
             {
-	            break;
+                break;
             }
 
             // Guard against non-printable
             if (ch < 0x20 || ch > 0x7E)
             {
-	            wbuf[j] = L'?';
-            	continue;
+                wbuf[j] = L'?';
+                continue;
             }
 
             wbuf[j] = static_cast<wchar_t>(ch);
@@ -183,6 +183,43 @@ namespace
 
     // Simple cache to avoid repeated registry reads
     std::unordered_map<std::wstring, std::wstring> serialCache;
+
+    /// <summary>
+    /// Describes the position of a monitor RECT relative to the primary monitor's RECT
+    /// </summary>
+    /// <param name="r">Monitor RECT</param>
+    /// <param name="primary">Primary monitor RECT</param>
+    /// <returns>String describing the position</returns>
+    std::wstring DescribePosition(const RECT& r, const RECT& primary)
+    {
+        // For primary itself
+        if (EqualRect(&r, &primary))
+        {
+            return L"primary";
+        }
+
+        if (r.right <= primary.left)
+        {
+            return L"left";
+        }
+
+        if (r.left >= primary.right)
+        {
+            return L"right";
+        }
+
+        if (r.bottom <= primary.top)
+        {
+            return L"above";
+        }
+
+        if (r.top >= primary.bottom)
+        {
+            return L"below";
+        }
+
+        return L"overlap";
+    }
 }
 
 // ReSharper disable once CppMemberFunctionMayBeStatic
@@ -198,11 +235,39 @@ std::vector<MonitorData> MonitorService::GetMonitorsData() const
         throw std::runtime_error("Monitor and display config data size mismatch");
     }
 
+    // First pass: create all MonitorData objects
     returnData.reserve(monitorInfo.size());
     for (size_t i = 0; i < monitorInfo.size(); ++i)
     {
         const auto serial = TryGetMonitorSerialFromDevicePath(displayInfo[i].DevicePath);
         returnData.emplace_back(monitorInfo[i], displayInfo[i], serial);
+    }
+
+    // Second pass: determine relative positions
+    RECT primaryRect{};
+    for (const auto& md : returnData)
+    {
+        if (md.IsPrimary)
+        {
+            primaryRect = IsRectEmpty(&md.WorkRect) ? md.MonitorRect : md.WorkRect;
+            break;
+        }
+    }
+
+    if (primaryRect.right > 0)
+    {
+        for (auto& md : returnData)
+        {
+            // Explicitly check for the primary monitor first.
+            if (md.IsPrimary)
+            {
+                md.RelativePosition = L"primary";
+            }
+            else
+            {
+                md.RelativePosition = DescribePosition(md.MonitorRect, primaryRect);
+            }
+        }
     }
 
     return returnData;
@@ -229,7 +294,7 @@ std::vector<DisplayConfigData> MonitorService::GetDisplayConfigInfo()
     constexpr UINT32 flags = QDC_ONLY_ACTIVE_PATHS | QDC_VIRTUAL_MODE_AWARE;
 
     long result;
-    
+
     do
     {
         UINT32 pathCount;
@@ -278,39 +343,6 @@ std::vector<DisplayConfigData> MonitorService::GetDisplayConfigInfo()
     return returnData;
 }
 
-int MonitorService::FindMonitorIndex(
-    const std::vector<MonitorData>& monitors, const std::wstring& key, const RECT& rect)
-{
-    if (!key.empty())
-    {
-        int index = 0;
-        for (const auto& monitor : monitors)
-        {
-            if (_wcsicmp(monitor.Key.c_str(), key.c_str()) == 0)
-            {
-                return index;
-            }
-            ++index;
-        }
-    }
-
-    // Legacy fallback using persisted RECT
-    if (rect.right > 0) // Basic check for a non-empty rect
-    {
-        int index = 0;
-        for (const auto& monitor : monitors)
-        {
-            if (EqualRect(&monitor.MonitorRect, &rect))
-            {
-                return index;
-            }
-            ++index;
-        }
-    }
-
-    return -1; // Not found
-}
-
 std::wstring MonitorService::TryGetMonitorSerialFromDevicePath(const std::wstring& devicePath)
 {
     if (devicePath.empty())
@@ -353,7 +385,7 @@ std::wstring MonitorService::TryGetMonitorSerialFromDevicePath(const std::wstrin
             {
                 DWORD type = 0;
                 DWORD size = 0;
-                if (RegQueryValueExW(hKey, L"EDID", nullptr, &type, nullptr, &size) == ERROR_SUCCESS && 
+                if (RegQueryValueExW(hKey, L"EDID", nullptr, &type, nullptr, &size) == ERROR_SUCCESS &&
                     type == REG_BINARY && size > 0)
                 {
                     std::vector<BYTE> edid(size);
@@ -377,4 +409,36 @@ std::wstring MonitorService::TryGetMonitorSerialFromDevicePath(const std::wstrin
     // Cache even empty to avoid repeated attempts
     serialCache[devicePath] = serial;
     return serial;
+}
+
+int MonitorService::FindMonitorIndex(const std::vector<MonitorData>& monitors, const std::wstring& key, const RECT& rect)
+{
+    if (!key.empty())
+    {
+        int index = 0;
+        for (const auto& monitor : monitors)
+        {
+            if (_wcsicmp(monitor.Key.c_str(), key.c_str()) == 0)
+            {
+                return index;
+            }
+            ++index;
+        }
+    }
+
+    // Legacy fallback using persisted RECT
+    if (rect.right > 0) // Basic check for a non-empty rect
+    {
+        int index = 0;
+        for (const auto& monitor : monitors)
+        {
+            if (EqualRect(&monitor.MonitorRect, &rect))
+            {
+                return index;
+            }
+            ++index;
+        }
+    }
+
+    return -1; // Not found
 }

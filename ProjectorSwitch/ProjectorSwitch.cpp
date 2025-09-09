@@ -95,61 +95,6 @@ namespace
 	}
 
 	/// <summary>
-	/// Gets the RECT of the primary monitor from the monitor data list
-	/// </summary>
-	/// <param name="data">Monitor data</param>
-	/// <returns>RECT of primary monitor or (0,0,0,0) if not found</returns>
-	RECT GetPrimaryRectFromData(const std::vector<MonitorData>& data)
-	{
-		for (const auto& m : data)
-		{
-			if (m.IsPrimary)
-			{
-				return IsRectEmpty(&m.WorkRect) ? m.MonitorRect : m.WorkRect;
-			}
-		}
-
-		return RECT{ 0, 0, 0, 0 };
-	}
-
-	/// <summary>
-	/// Describes the position of a monitor RECT relative to the primary monitor's RECT
-	/// </summary>
-	/// <param name="r">Monitor RECT</param>
-	/// <param name="primary">Primary monitor RECT</param>
-	/// <returns>String describing the position</returns>
-	std::wstring DescribePosition(const RECT& r, const RECT& primary)
-	{
-		// For primary itself
-		if (EqualRect(&r, &primary))
-		{
-			return L"primary";
-		}
-
-		if (r.right <= primary.left)
-		{
-			return L"left";
-		}
-
-		if (r.left >= primary.right)
-		{
-			return L"right";
-		}
-
-		if (r.bottom <= primary.top)
-		{
-			return L"above";
-		}
-
-		if (r.top >= primary.bottom)
-		{
-			return L"below";
-		}
-
-		return L"overlap";
-	}
-
-	/// <summary>
 	/// Adds monitor entries to the combo box
 	/// </summary>
 	/// <param name="comboHandle">ComboBox handle</param>
@@ -158,23 +103,9 @@ namespace
 		constexpr MonitorService ms;
 		TheMonitorData = ms.GetMonitorsData();
 
-		const RECT primaryRect = GetPrimaryRectFromData(TheMonitorData);
-
 		for (const auto& i : TheMonitorData)
 		{
-			const RECT& r = i.MonitorRect;
-
-			// Position relative to primary
-			const std::wstring pos = DescribePosition(r, primaryRect);
-
-			// If it's the primary monitor, show "primary"; otherwise show the relative position
-			const std::wstring status = i.IsPrimary ? L"primary" : pos;
-
-			std::wstring displayText = i.FriendlyName;
-			displayText += L" (";
-			displayText += status;
-			displayText += L")";
-
+			const std::wstring displayText = i.GetDisplayName();
 			SendMessage(comboHandle, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(displayText.c_str()));
 		}
 	}
@@ -206,7 +137,7 @@ namespace
 	/// <param name="comboHandle">ComboBox handle</param>
 	void SelectMonitor(const HWND comboHandle)
 	{
-		const SettingsService ss;
+		SettingsService ss;
 		const std::wstring savedKey = ss.LoadSelectedMonitorKey();
 		const RECT savedRect = ss.LoadSelectedMonitorRect();
 
@@ -307,7 +238,7 @@ namespace
 		}
 
 		const MonitorData& md = TheMonitorData[static_cast<size_t>(selectedIndex)];
-		const SettingsService ss;
+		SettingsService ss;
 
 		// Save both the robust key and the RECT for legacy behavior
 		ss.SaveSelectedMonitorKey(md.Key);

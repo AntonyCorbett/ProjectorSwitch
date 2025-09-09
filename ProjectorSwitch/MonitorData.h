@@ -14,6 +14,7 @@ struct MonitorData
 	std::wstring DeviceName;
 	std::wstring SerialNumber;
 	std::wstring Key;
+	std::wstring RelativePosition;
 
 	MonitorData() = default;
 
@@ -39,4 +40,14 @@ struct MonitorData
 			Key = L"PATH:" + DevicePath;
 		}
 	}
+
+	/// <summary>
+	/// Gets a formatted display name for the monitor.
+	/// </summary>
+	/// <param name="format">
+	/// A format string with placeholders.
+	/// Available placeholders: {FriendlyName}, {Position}, {SerialNumber}, {Key}, {DeviceName}, {Rect}, {Size}
+	/// </param>
+	/// <returns>The formatted display name.</returns>
+	[[nodiscard]] std::wstring GetDisplayName(const std::wstring& format = L"{FriendlyName} ({Position})") const;
 };

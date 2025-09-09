@@ -155,6 +155,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AutomationService.cpp" />
+    <ClCompile Include="MonitorData.cpp" />
     <ClCompile Include="ProjectorSwitch.cpp" />
     <ClCompile Include="MonitorService.cpp" />
     <ClCompile Include="ProcessesService.cpp" />
