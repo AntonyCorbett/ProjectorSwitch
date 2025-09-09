@@ -362,7 +362,7 @@ namespace
 		}
 
 		const MonitorData& md = TheMonitorData[static_cast<size_t>(selectedIndex)];
-		SettingsService ss;
+		const SettingsService ss;
 
 		// Prefer serial-based identity if available; fallback to device path
 		const std::wstring serial = MonitorService::TryGetMonitorSerialFromDevicePath(md.DevicePath);
