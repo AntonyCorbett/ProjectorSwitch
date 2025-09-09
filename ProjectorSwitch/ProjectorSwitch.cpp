@@ -113,7 +113,7 @@ namespace
 	}
 
 	/// <summary>
-	/// Describes the position of a monitor RECT relative to the primary monitor RECT
+	/// Describes the position of a monitor RECT relative to the primary monitor's RECT
 	/// </summary>
 	/// <param name="r">Monitor RECT</param>
 	/// <param name="primary">Primary monitor RECT</param>
@@ -206,73 +206,18 @@ namespace
 	/// <param name="comboHandle">ComboBox handle</param>
 	void SelectMonitor(const HWND comboHandle)
 	{
-		SettingsService ss;
-
-		// Prefer robust key matching
+		const SettingsService ss;
 		const std::wstring savedKey = ss.LoadSelectedMonitorKey();
+		const RECT savedRect = ss.LoadSelectedMonitorRect();
 
-		bool matched = false;
+		const int index = MonitorService::FindMonitorIndex(TheMonitorData, savedKey, savedRect);
 
-		if (!savedKey.empty())
+		if (index >= 0)
 		{
-			const bool isSerialKey = savedKey.rfind(L"SERIAL:", 0) == 0;
-			const bool isPathKey = savedKey.rfind(L"PATH:", 0) == 0;
-
-			if (isSerialKey)
-			{
-				const std::wstring targetSerial = savedKey.substr(7);
-				int index = 0;
-				for (const auto& i : TheMonitorData)
-				{
-					const std::wstring serial = MonitorService::TryGetMonitorSerialFromDevicePath(i.DevicePath);
-					if (!serial.empty() && _wcsicmp(serial.c_str(), targetSerial.c_str()) == 0)
-					{
-						SendMessage(comboHandle, CB_SETCURSEL, index, 0);
-						matched = true;
-						EnableWindow(BtnHandle, TRUE);
-						break;
-					}
-					++index;
-				}
-			}
-			else if (isPathKey)
-			{
-				const std::wstring targetPath = savedKey.substr(5);
-				int index = 0;
-				for (const auto& i : TheMonitorData)
-				{
-					if (_wcsicmp(i.DevicePath.c_str(), targetPath.c_str()) == 0)
-					{
-						SendMessage(comboHandle, CB_SETCURSEL, index, 0);
-						matched = true;
-						EnableWindow(BtnHandle, TRUE);
-						break;
-					}
-					++index;
-				}
-			}
+			SendMessage(comboHandle, CB_SETCURSEL, index, 0);
+			EnableWindow(BtnHandle, TRUE);
 		}
-
-		if (!matched)
-		{
-			// Legacy fallback using persisted RECT
-			const RECT rect = ss.LoadSelectedMonitorRect();
-
-			int index = 0;
-			for (const auto& i : TheMonitorData)
-			{
-				if (EqualRect(&i.MonitorRect, &rect))
-				{
-					SendMessage(comboHandle, CB_SETCURSEL, index, 0);
-					matched = true;
-					EnableWindow(BtnHandle, TRUE);
-					break;
-				}
-				++index;
-			}
-		}
-
-		if (!matched)
+		else
 		{
 			// clear
 			SendMessage(comboHandle, CB_SETCURSEL, static_cast<WPARAM>(-1), 0);
@@ -364,20 +309,8 @@ namespace
 		const MonitorData& md = TheMonitorData[static_cast<size_t>(selectedIndex)];
 		const SettingsService ss;
 
-		// Prefer serial-based identity if available; fallback to device path
-		const std::wstring serial = MonitorService::TryGetMonitorSerialFromDevicePath(md.DevicePath);
-		std::wstring key;
-		if (!serial.empty())
-		{
-			key = L"SERIAL:" + serial;
-		}
-		else
-		{
-			key = L"PATH:" + md.DevicePath;
-		}
-
 		// Save both the robust key and the RECT for legacy behavior
-		ss.SaveSelectedMonitorKey(key);
+		ss.SaveSelectedMonitorKey(md.Key);
 		ss.SaveSelectedMonitorRect(md.MonitorRect);
 	}
 
@@ -401,9 +334,9 @@ namespace
 
 		case WM_GETMINMAXINFO:
 		{
-			const auto lpMMI = reinterpret_cast<LPMINMAXINFO>(lParam);  // NOLINT(performance-no-int-to-ptr)
-			lpMMI->ptMinTrackSize.x = 100;
-			lpMMI->ptMinTrackSize.y = 100;
+			const auto lpMmi = reinterpret_cast<LPMINMAXINFO>(lParam);  // NOLINT(performance-no-int-to-ptr)
+			lpMmi->ptMinTrackSize.x = 100;
+			lpMmi->ptMinTrackSize.y = 100;
 			break;
 		}
 
@@ -500,7 +433,7 @@ namespace
 		MainWindowHandle = CreateWindowExW(
 			WS_EX_TOPMOST,
 			MainWindowClass,
-			TitleBarCaption,			
+			TitleBarCaption,
 			((WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN) & ~(WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_THICKFRAME)),
 			CW_USEDEFAULT,
 			CW_USEDEFAULT,

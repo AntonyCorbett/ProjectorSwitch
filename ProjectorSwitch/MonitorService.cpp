@@ -201,7 +201,8 @@ std::vector<MonitorData> MonitorService::GetMonitorsData() const
     returnData.reserve(monitorInfo.size());
     for (size_t i = 0; i < monitorInfo.size(); ++i)
     {
-        returnData.emplace_back(monitorInfo[i], displayInfo[i]);
+        const auto serial = TryGetMonitorSerialFromDevicePath(displayInfo[i].DevicePath);
+        returnData.emplace_back(monitorInfo[i], displayInfo[i], serial);
     }
 
     return returnData;
@@ -275,6 +276,39 @@ std::vector<DisplayConfigData> MonitorService::GetDisplayConfigInfo()
     }
 
     return returnData;
+}
+
+int MonitorService::FindMonitorIndex(
+    const std::vector<MonitorData>& monitors, const std::wstring& key, const RECT& rect)
+{
+    if (!key.empty())
+    {
+        int index = 0;
+        for (const auto& monitor : monitors)
+        {
+            if (_wcsicmp(monitor.Key.c_str(), key.c_str()) == 0)
+            {
+                return index;
+            }
+            ++index;
+        }
+    }
+
+    // Legacy fallback using persisted RECT
+    if (rect.right > 0) // Basic check for a non-empty rect
+    {
+        int index = 0;
+        for (const auto& monitor : monitors)
+        {
+            if (EqualRect(&monitor.MonitorRect, &rect))
+            {
+                return index;
+            }
+            ++index;
+        }
+    }
+
+    return -1; // Not found
 }
 
 std::wstring MonitorService::TryGetMonitorSerialFromDevicePath(const std::wstring& devicePath)
