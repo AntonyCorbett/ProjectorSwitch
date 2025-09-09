@@ -321,7 +321,7 @@ namespace
 	/// <param name="message">Message</param>
 	/// <param name="wParam">wParam</param>
 	/// <param name="lParam">lParam</param>
-	/// <returns>LRESULT value</returns>
+	/// <returns>Result</returns>
 	LRESULT CALLBACK WndProc(const HWND hWnd, const UINT message, const WPARAM wParam, const LPARAM lParam)
 	{
 		switch (message)
