@@ -27,15 +27,6 @@
     <ClInclude Include="ProjectorSwitch.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="MonitorService.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="MonitorData.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="DisplayConfigData.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="SettingsService.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -71,9 +62,6 @@
     <ClCompile Include="ProjectorSwitch.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="MonitorService.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="SettingsService.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -87,9 +75,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="WindowPlacementService.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="MonitorData.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

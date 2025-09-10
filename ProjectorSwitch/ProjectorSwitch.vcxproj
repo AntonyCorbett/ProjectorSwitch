@@ -106,6 +106,7 @@
       <PreprocessorDefinitions>_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <AdditionalIncludeDirectories>D:\ProjectsPersonal\ApcMonitorCore\ApcMonitorCore;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -123,6 +124,7 @@
       <ConformanceMode>true</ConformanceMode>
       <Optimization>MaxSpeed</Optimization>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <AdditionalIncludeDirectories>D:\ProjectsPersonal\ApcMonitorCore\ApcMonitorCore;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -139,12 +141,9 @@
     <ClInclude Include="AutomationService.h" />
     <ClInclude Include="HandleDeleter.h" />
     <ClInclude Include="ProjectorSwitch.h" />
-    <ClInclude Include="DisplayConfigData.h" />
     <ClInclude Include="DisplayWindowResult.h" />
     <ClInclude Include="FindWindowsResult.h" />
     <ClInclude Include="framework.h" />
-    <ClInclude Include="MonitorData.h" />
-    <ClInclude Include="MonitorService.h" />
     <ClInclude Include="ProcessesService.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="SettingsService.h" />
@@ -155,9 +154,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AutomationService.cpp" />
-    <ClCompile Include="MonitorData.cpp" />
     <ClCompile Include="ProjectorSwitch.cpp" />
-    <ClCompile Include="MonitorService.cpp" />
     <ClCompile Include="ProcessesService.cpp" />
     <ClCompile Include="SettingsService.cpp" />
     <ClCompile Include="WindowPlacementService.cpp" />
@@ -171,6 +168,11 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\ApcMonitorCore\ApcMonitorCore\ApcMonitorCore.vcxproj">
+      <Project>{b52ea748-babe-450c-ab47-e052bfbeaa60}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
