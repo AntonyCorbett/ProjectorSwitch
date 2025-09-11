@@ -6,14 +6,11 @@
 #include <string>
 #include <memory>
 #include <vector>
-#include <ShellScalingApi.h> // For DPI awareness functions
 #include "ProjectorSwitch.h"
 #include "MonitorService.h"
 #include "SettingsService.h"
 #include "ZoomService.h"
 #include "WindowPlacementService.h"
-
-#pragma comment(lib, "Shcore.lib") // Link the Shcore library for DPI functions
 
 constexpr int MaxLoadStringLength = 100;
 constexpr int BaseDpi = 96;
@@ -82,26 +79,33 @@ namespace
 	/// </summary>
 	/// <param name="hwnd">Main window handle (unused)</param>
 	/// <param name="lParam">lParam value (new width and height)</param>
+	/// <summary>
+	/// Handles resizing of the main window, rearranging controls as needed
+	/// </summary>
+	/// <param name="hwnd">Main window handle (unused)</param>
+	/// <param name="lParam">lParam value (new width and height)</param>
 	void HandleResize(HWND hwnd, const LPARAM lParam)
 	{
-		if (!BtnHandle || !ComboBoxHandle)
-		{
-			return;
-		}
+		if (!BtnHandle || !ComboBoxHandle) return;
 
 		const UINT width = LOWORD(lParam);
 		const UINT height = HIWORD(lParam);
 		UNREFERENCED_PARAMETER(height);
 
-		// arrange the button
-		int x = static_cast<int>(width - Scale(ButtonWidth)) / 2;
-		int y = Scale(10);
-		MoveWindow(BtnHandle, x, y, Scale(ButtonWidth), Scale(ButtonHeight), TRUE);
+		// Always compute sizes from logical DIPs so they rescale with DPI
+		const int btnW = Scale(ButtonWidth);
+		const int btnH = Scale(ButtonHeight);
+		const int comboW = Scale(ComboBoxWidth);
+		const int comboH = Scale(ComboBoxHeight);
 
-		// arrange the combo
-		x = static_cast<int>(width - Scale(ComboBoxWidth)) / 2;
-		y = y + Scale(ButtonHeight) + Scale(20);
-		MoveWindow(ComboBoxHandle, x, y, Scale(ComboBoxWidth), Scale(ComboBoxHeight) * 5, TRUE);
+		// Center and position with scaled margins
+		int x = static_cast<int>(width - btnW) / 2;
+		int y = Scale(10);
+		MoveWindow(BtnHandle, x, y, btnW, btnH, TRUE);
+
+		x = static_cast<int>(width - comboW) / 2;
+		y = y + btnH + Scale(20);
+		MoveWindow(ComboBoxHandle, x, y, comboW, comboH, TRUE);
 	}
 
 	/// <summary>
@@ -118,6 +122,9 @@ namespace
 			const std::wstring displayText = i.GetDisplayName();
 			SendMessage(comboHandle, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(displayText.c_str()));
 		}
+
+		// Show ~8 items when dropped (no need to inflate the control's selection height)
+		SendMessage(comboHandle, CB_SETMINVISIBLE, 8, 0);
 	}
 
 	/// <summary>
@@ -171,8 +178,11 @@ namespace
 	/// <returns>Font handle</returns>
 	HFONT CreateModernFont()
 	{
+		// ~10pt Segoe UI; negative => character height
+		constexpr int pointSize = 10;
+		const int lfHeight = -MulDiv(pointSize, static_cast<int>(CurrentDpi), 72);
 		return CreateFont(
-			Scale(16), 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
+			lfHeight, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
 			DEFAULT_CHARSET, OUT_OUTLINE_PRECIS,
 			CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH,
 			L"Segoe UI");
@@ -207,19 +217,18 @@ namespace
 		const auto result = CreateWindowW(
 			L"COMBOBOX",
 			nullptr,
-			WS_TABSTOP | WS_VISIBLE | WS_CHILD | CBS_DROPDOWNLIST,
-			Scale(10),   // x position 
-			Scale(100),  // y position 
-			Scale(ComboBoxWidth),  // width
-			Scale(ComboBoxHeight) * 5, // height
-			parent, // Parent window
+			WS_TABSTOP | WS_VISIBLE | WS_CHILD | CBS_DROPDOWNLIST | WS_VSCROLL,
+			Scale(10),   // x
+			Scale(100),  // y
+			Scale(ComboBoxWidth),
+			Scale(ComboBoxHeight), // single-line selection; dropdown height handled by CB_SETMINVISIBLE
+			parent,
 			reinterpret_cast<HMENU>(static_cast<UINT_PTR>(ComboBoxId)),  // NOLINT(performance-no-int-to-ptr)
 			reinterpret_cast<HINSTANCE>(GetWindowLongPtr(parent, GWLP_HINSTANCE)), // NOLINT(performance-no-int-to-ptr)
-			nullptr); // Pointer not needed.
+			nullptr);
 
 		AddMonitorsToCombo(result);
 		SelectMonitor(result);
-
 		return result;
 	}
 
@@ -281,6 +290,14 @@ namespace
 				prcNewWindow->right - prcNewWindow->left,
 				prcNewWindow->bottom - prcNewWindow->top,
 				SWP_NOZORDER | SWP_NOACTIVATE);
+
+			// Recompute layout at the new DPI using current client size
+			RECT rcClient{};
+			if (GetClientRect(hWnd, &rcClient))
+			{
+				const LPARAM sizeParam = MAKELPARAM(rcClient.right - rcClient.left, rcClient.bottom - rcClient.top);
+				HandleResize(hWnd, sizeParam);
+			}
 			break;
 		}
 		case WM_SIZE:
@@ -386,18 +403,54 @@ namespace
 
 	BOOL InitInstance(const HINSTANCE hInstance, const int nCmdShow)
 	{
-		CurrentInstance = hInstance; // Store instance handle in our global variable
+		CurrentInstance = hInstance;
+
+		// Use system DPI to compute a reasonable initial size; WM_CREATE updates CurrentDpi to window DPI.
 		CurrentDpi = GetDpiForSystem();
 
+		// Desired client size in DIPs based on content layout
+		constexpr int topMarginDip = 10;
+		constexpr int spacingDip = 20;
+		constexpr int bottomDip = 20;
+		constexpr int clientDipW = 240;
+		constexpr int clientDipH = topMarginDip + ButtonHeight + spacingDip + ComboBoxHeight + bottomDip; // 10 + 60 + 20 + 20 + 10 = 120
+
+		// Convert to pixels at the current DPI
+		const int clientPxW = MulDiv(clientDipW, static_cast<int>(CurrentDpi), BaseDpi);
+		const int clientPxH = MulDiv(clientDipH, static_cast<int>(CurrentDpi), BaseDpi);
+
+		constexpr DWORD exStyle = WS_EX_TOPMOST;
+		constexpr DWORD style = ((WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN) & ~(WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_THICKFRAME));
+
+		RECT rc = { 0, 0, clientPxW, clientPxH };
+
+		// Account for non-client (caption/borders) at this DPI
+		using PFN_AdjustWindowRectExForDpi = BOOL(WINAPI*)(LPRECT, DWORD, BOOL, DWORD, UINT);
+		if (auto user32 = GetModuleHandleW(L"user32.dll"))
+		{
+			const auto pAdjust = reinterpret_cast<PFN_AdjustWindowRectExForDpi>(  // NOLINT(clang-diagnostic-cast-function-type-strict)
+				GetProcAddress(user32, "AdjustWindowRectExForDpi"));
+
+			if (pAdjust) pAdjust(&rc, style, FALSE, exStyle, CurrentDpi);
+			else AdjustWindowRectEx(&rc, style, FALSE, exStyle);
+		}
+		else
+		{
+			AdjustWindowRectEx(&rc, style, FALSE, exStyle);
+		}
+
+		const int winW = rc.right - rc.left;
+		const int winH = rc.bottom - rc.top;
+
 		MainWindowHandle = CreateWindowExW(
-			WS_EX_TOPMOST,
+			exStyle,
 			MainWindowClass,
 			TitleBarCaption,
-			((WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN) & ~(WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_THICKFRAME)),
+			style,
 			CW_USEDEFAULT,
 			CW_USEDEFAULT,
-			Scale(240), // width
-			Scale(155), // height
+			winW,
+			winH,
 			nullptr,
 			nullptr,
 			hInstance,
