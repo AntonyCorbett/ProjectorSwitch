@@ -6,13 +6,17 @@
 #include <string>
 #include <memory>
 #include <vector>
+#include <ShellScalingApi.h> // For DPI awareness functions
 #include "ProjectorSwitch.h"
 #include "MonitorService.h"
 #include "SettingsService.h"
 #include "ZoomService.h"
 #include "WindowPlacementService.h"
 
+#pragma comment(lib, "Shcore.lib") // Link the Shcore library for DPI functions
+
 constexpr int MaxLoadStringLength = 100;
+constexpr int BaseDpi = 96;
 constexpr int ButtonWidth = 200;
 constexpr int ButtonHeight = 60;
 constexpr int ComboBoxWidth = 200;
@@ -39,6 +43,17 @@ namespace
 	std::vector<MonitorData> TheMonitorData;
 	std::unique_ptr<ZoomService> TheZoomService;
 	const std::wstring AppName = L"ApcProjSw";
+	UINT CurrentDpi = BaseDpi;
+
+	/// <summary>
+	/// Scales an integer value based on the current DPI.
+	/// </summary>
+	/// <param name="value">The value to scale.</param>
+	/// <returns>The scaled value.</returns>
+	int Scale(const int value)
+	{
+		return MulDiv(value, static_cast<int>(CurrentDpi), BaseDpi);
+	}
 
 	/// <summary>
 	/// Saves main window position to settings
@@ -47,7 +62,7 @@ namespace
 	void SaveWindowPosition(const HWND hWnd)
 	{
 		SettingsService ss;
-		WindowPlacementService wps(&ss);
+		const WindowPlacementService wps(&ss);
 		wps.SaveWindowPlace(hWnd);
 	}
 
@@ -58,7 +73,7 @@ namespace
 	void RestoreWindowPosition(const HWND hwnd)
 	{
 		SettingsService ss;
-		WindowPlacementService wps(&ss);
+		const WindowPlacementService wps(&ss);
 		wps.RestoreWindowPlace(hwnd);
 	}
 
@@ -78,20 +93,15 @@ namespace
 		const UINT height = HIWORD(lParam);
 		UNREFERENCED_PARAMETER(height);
 
-		RECT rcBtn = {};
-		RECT rcCombo = {};
-		GetClientRect(BtnHandle, &rcBtn);
-		GetClientRect(ComboBoxHandle, &rcCombo);
-
 		// arrange the button
-		int x = static_cast<int>(width - (rcBtn.right - rcBtn.left)) / 2;
-		int y = 10;
-		MoveWindow(BtnHandle, x, y, rcBtn.right - rcBtn.left, rcBtn.bottom - rcBtn.top, TRUE);
+		int x = static_cast<int>(width - Scale(ButtonWidth)) / 2;
+		int y = Scale(10);
+		MoveWindow(BtnHandle, x, y, Scale(ButtonWidth), Scale(ButtonHeight), TRUE);
 
 		// arrange the combo
-		x = static_cast<int>(width - (rcCombo.right - rcCombo.left)) / 2;
-		y = rcBtn.bottom + 20;
-		MoveWindow(ComboBoxHandle, x, y, rcCombo.right - rcCombo.left, rcCombo.bottom - rcCombo.top, TRUE);
+		x = static_cast<int>(width - Scale(ComboBoxWidth)) / 2;
+		y = y + Scale(ButtonHeight) + Scale(20);
+		MoveWindow(ComboBoxHandle, x, y, Scale(ComboBoxWidth), Scale(ComboBoxHeight) * 5, TRUE);
 	}
 
 	/// <summary>
@@ -121,10 +131,10 @@ namespace
 			L"BUTTON",
 			L"Toggle Zoom Window",
 			WS_TABSTOP | WS_VISIBLE | WS_CHILD | WS_DISABLED,
-			10, // x position 
-			10, // y position 
-			ButtonWidth,
-			ButtonHeight,
+			Scale(10), // x position 
+			Scale(10), // y position 
+			Scale(ButtonWidth),
+			Scale(ButtonHeight),
 			parent,
 			reinterpret_cast<HMENU>(static_cast<UINT_PTR>(ButtonId)), // NOLINT(performance-no-int-to-ptr)
 			reinterpret_cast<HINSTANCE>(GetWindowLongPtr(parent, GWLP_HINSTANCE)), // NOLINT(performance-no-int-to-ptr)
@@ -137,7 +147,7 @@ namespace
 	/// <param name="comboHandle">ComboBox handle</param>
 	void SelectMonitor(const HWND comboHandle)
 	{
-		SettingsService ss;
+		const SettingsService ss;
 		const std::wstring savedKey = ss.LoadSelectedMonitorKey();
 		const RECT savedRect = ss.LoadSelectedMonitorRect();
 
@@ -162,7 +172,7 @@ namespace
 	HFONT CreateModernFont()
 	{
 		return CreateFont(
-			16, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
+			Scale(16), 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
 			DEFAULT_CHARSET, OUT_OUTLINE_PRECIS,
 			CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH,
 			L"Segoe UI");
@@ -173,10 +183,11 @@ namespace
 	/// </summary>	
 	void SetModernFont()
 	{
-		if (!ModernFont)
+		if (ModernFont)
 		{
-			ModernFont = CreateModernFont();
+			DeleteObject(ModernFont);
 		}
+		ModernFont = CreateModernFont();
 
 		if (ModernFont)
 		{
@@ -193,14 +204,14 @@ namespace
 	/// <returns>ComboBox handle</returns>
 	HWND CreateComboBox(const HWND parent)
 	{
-		auto result = CreateWindowW(
+		const auto result = CreateWindowW(
 			L"COMBOBOX",
 			nullptr,
 			WS_TABSTOP | WS_VISIBLE | WS_CHILD | CBS_DROPDOWNLIST,
-			10,   // x position 
-			100,  // y position 
-			ComboBoxWidth,  // width
-			ComboBoxHeight, // height
+			Scale(10),   // x position 
+			Scale(100),  // y position 
+			Scale(ComboBoxWidth),  // width
+			Scale(ComboBoxHeight) * 5, // height
 			parent, // Parent window
 			reinterpret_cast<HMENU>(static_cast<UINT_PTR>(ComboBoxId)),  // NOLINT(performance-no-int-to-ptr)
 			reinterpret_cast<HINSTANCE>(GetWindowLongPtr(parent, GWLP_HINSTANCE)), // NOLINT(performance-no-int-to-ptr)
@@ -238,9 +249,9 @@ namespace
 		}
 
 		const MonitorData& md = TheMonitorData[static_cast<size_t>(selectedIndex)];
-		SettingsService ss;
-
+		
 		// Save both the robust key and the RECT for legacy behavior
+		const SettingsService ss;
 		ss.SaveSelectedMonitorKey(md.Key);
 		ss.SaveSelectedMonitorRect(md.MonitorRect);
 	}
@@ -257,6 +268,21 @@ namespace
 	{
 		switch (message)
 		{
+		case WM_DPICHANGED:
+		{
+			CurrentDpi = HIWORD(wParam);
+			SetModernFont();
+
+			const auto* const prcNewWindow = reinterpret_cast<RECT*>(lParam);  // NOLINT(performance-no-int-to-ptr)
+			SetWindowPos(hWnd,
+				nullptr,
+				prcNewWindow->left,
+				prcNewWindow->top,
+				prcNewWindow->right - prcNewWindow->left,
+				prcNewWindow->bottom - prcNewWindow->top,
+				SWP_NOZORDER | SWP_NOACTIVATE);
+			break;
+		}
 		case WM_SIZE:
 		{
 			HandleResize(hWnd, lParam);
@@ -266,12 +292,13 @@ namespace
 		case WM_GETMINMAXINFO:
 		{
 			const auto lpMmi = reinterpret_cast<LPMINMAXINFO>(lParam);  // NOLINT(performance-no-int-to-ptr)
-			lpMmi->ptMinTrackSize.x = 100;
-			lpMmi->ptMinTrackSize.y = 100;
+			lpMmi->ptMinTrackSize.x = Scale(100);
+			lpMmi->ptMinTrackSize.y = Scale(100);
 			break;
 		}
 
 		case WM_CREATE:
+			CurrentDpi = GetDpiForWindow(hWnd);
 			BtnHandle = CreateButton(hWnd);
 			ComboBoxHandle = CreateComboBox(hWnd);
 			SetModernFont();
@@ -360,6 +387,7 @@ namespace
 	BOOL InitInstance(const HINSTANCE hInstance, const int nCmdShow)
 	{
 		CurrentInstance = hInstance; // Store instance handle in our global variable
+		CurrentDpi = GetDpiForSystem();
 
 		MainWindowHandle = CreateWindowExW(
 			WS_EX_TOPMOST,
@@ -368,8 +396,8 @@ namespace
 			((WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN) & ~(WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_THICKFRAME)),
 			CW_USEDEFAULT,
 			CW_USEDEFAULT,
-			240, // width
-			155, // height
+			Scale(240), // width
+			Scale(155), // height
 			nullptr,
 			nullptr,
 			hInstance,
@@ -398,6 +426,9 @@ int APIENTRY wWinMain(
 {
 	UNREFERENCED_PARAMETER(hPrevInstance);
 	UNREFERENCED_PARAMETER(lpCmdLine);
+
+	// Set DPI awareness to per-monitor v2
+	SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
 
 	CHandle appMutex(CreateMutex(nullptr, TRUE, AppName.c_str()));
 	if (GetLastError() == ERROR_ALREADY_EXISTS)
