@@ -483,6 +483,12 @@ int APIENTRY wWinMain(
 	// Set DPI awareness to per-monitor v2
 	SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
 
+	// options to disable DPI awareness if desired (as an alternative to PMV2 above):
+	// Option 1: completely DPI-unaware (bitmap-scaled, blur on >100%)
+	// SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_UNAWARE);
+	// Option 2: DPI-unaware (GDI-scaled) on Win10+ for slightly better scaling when moving across monitors
+	// SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_UNAWARE_GDISCALED);
+
 	CHandle appMutex(CreateMutex(nullptr, TRUE, AppName.c_str()));
 	if (GetLastError() == ERROR_ALREADY_EXISTS)
 	{
