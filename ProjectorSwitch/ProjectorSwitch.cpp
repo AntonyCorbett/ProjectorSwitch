@@ -7,10 +7,14 @@
 #include <memory>
 #include <vector>
 #include "ProjectorSwitch.h"
+
+#include <filesystem>
+
 #include "MonitorService.h"
 #include "SettingsService.h"
 #include "ZoomService.h"
 #include "WindowPlacementService.h"
+#include "Logger.h"
 
 constexpr int MaxLoadStringLength = 100;
 constexpr int BaseDpi = 96;
@@ -61,6 +65,7 @@ namespace
 		SettingsService ss;
 		const WindowPlacementService wps(&ss);
 		wps.SaveWindowPlace(hWnd);
+		LOG_DEBUG(L"Saved window position");
 	}
 
 	/// <summary>
@@ -72,6 +77,7 @@ namespace
 		SettingsService ss;
 		const WindowPlacementService wps(&ss);
 		wps.RestoreWindowPlace(hwnd);
+		LOG_DEBUG(L"Restored window position");
 	}
 
 	/// <summary>
@@ -125,6 +131,7 @@ namespace
 
 		// Show ~8 items when dropped (no need to inflate the control's selection height)
 		SendMessage(comboHandle, CB_SETMINVISIBLE, 8, 0);
+		LOG_INFO(L"Enumerated %zu monitor(s) into combo box", TheMonitorData.size());
 	}
 
 	/// <summary>
@@ -164,11 +171,13 @@ namespace
 		{
 			SendMessage(comboHandle, CB_SETCURSEL, index, 0);
 			EnableWindow(BtnHandle, TRUE);
+			LOG_INFO(L"Preselected monitor index %d", index);
 		}
 		else
 		{
 			// clear
 			SendMessage(comboHandle, CB_SETCURSEL, static_cast<WPARAM>(-1), 0);
+			LOG_WARN(L"No persisted monitor selection matched");
 		}
 	}
 
@@ -205,6 +214,7 @@ namespace
 			if (BtnHandle) SendMessage(BtnHandle, WM_SETFONT, reinterpret_cast<WPARAM>(ModernFont), TRUE);
 			if (ComboBoxHandle) SendMessage(ComboBoxHandle, WM_SETFONT, reinterpret_cast<WPARAM>(ModernFont), TRUE);
 		}
+		LOG_DEBUG(L"Applied modern font (DPI=%u)", CurrentDpi);
 	}
 
 	/// <summary>
@@ -239,10 +249,15 @@ namespace
 	{
 		if (TheZoomService)
 		{
+			LOG_INFO(L"Toggling Zoom window");
 			TheZoomService->Toggle();
 
 			// Keep window topmost after toggling
 			SetWindowPos(MainWindowHandle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+		}
+		else
+		{
+			LOG_WARN(L"ZoomService not initialized");
 		}
 	}
 
@@ -254,15 +269,18 @@ namespace
 	{
 		if (selectedIndex < 0 || static_cast<size_t>(selectedIndex) >= TheMonitorData.size())
 		{
+			LOG_WARN(L"Selected monitor index %d out of range", selectedIndex);
 			return;
 		}
 
 		const MonitorData& md = TheMonitorData[static_cast<size_t>(selectedIndex)];
-		
+
 		// Save both the robust key and the RECT for legacy behavior
 		const SettingsService ss;
 		ss.SaveSelectedMonitorKey(md.Key);
 		ss.SaveSelectedMonitorRect(md.MonitorRect);
+		LOG_INFO(L"Saved monitor selection: index=%d key=%ls rect=[%ld,%ld,%ld,%ld]",
+			selectedIndex, md.Key.c_str(), md.MonitorRect.left, md.MonitorRect.top, md.MonitorRect.right, md.MonitorRect.bottom);
 	}
 
 	/// <summary>
@@ -280,6 +298,7 @@ namespace
 		case WM_DPICHANGED:
 		{
 			CurrentDpi = HIWORD(wParam);
+			LOG_INFO(L"WM_DPICHANGED -> DPI=%u", CurrentDpi);
 			SetModernFont();
 
 			const auto* const prcNewWindow = reinterpret_cast<RECT*>(lParam);  // NOLINT(performance-no-int-to-ptr)
@@ -316,10 +335,15 @@ namespace
 
 		case WM_CREATE:
 			CurrentDpi = GetDpiForWindow(hWnd);
+			LOG_INFO(L"WM_CREATE -> initial DPI=%u", CurrentDpi);
 			BtnHandle = CreateButton(hWnd);
 			ComboBoxHandle = CreateComboBox(hWnd);
 			SetModernFont();
 			TheZoomService = std::unique_ptr<ZoomService>(new ZoomService(new AutomationService(), new ProcessesService()));
+			if (!BtnHandle || !ComboBoxHandle)
+			{
+				LOG_ERROR(L"Failed to create child controls");
+			}
 			break;
 
 		case WM_COMMAND:
@@ -343,6 +367,10 @@ namespace
 						SaveSelectedMonitorId(selectedIndex);
 						EnableWindow(BtnHandle, TRUE);
 					}
+					else
+					{
+						LOG_WARN(L"CB_GETCURSEL returned CB_ERR");
+					}
 				}
 				break;
 			}
@@ -363,6 +391,7 @@ namespace
 		break;
 
 		case WM_DESTROY:
+			LOG_INFO(L"WM_DESTROY");
 			SaveWindowPosition(hWnd);
 			if (ModernFont)
 			{
@@ -458,6 +487,7 @@ namespace
 
 		if (!MainWindowHandle)
 		{
+			Logger::LogLastError(Logger::Level::Error, L"CreateWindowExW");
 			return FALSE;
 		}
 
@@ -467,6 +497,18 @@ namespace
 		UpdateWindow(MainWindowHandle);
 
 		return TRUE;
+	}
+
+	std::wstring& GetCurrentFolder()
+	{
+		static std::wstring currentFolder;
+		if (currentFolder.empty())
+		{
+			wchar_t buffer[MAX_PATH];
+			GetCurrentDirectoryW(MAX_PATH, buffer);
+			currentFolder = buffer;
+		}
+		return currentFolder;
 	}
 } // end anonymous namespace
 
@@ -483,6 +525,11 @@ int APIENTRY wWinMain(
 	// Set DPI awareness to per-monitor v2
 	SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
 
+	// Initialize logger as early as possible
+	const std::filesystem::path base = GetCurrentFolder();
+	Logger::Init(L"ProjectorSwitch", base / L"Logs");
+	LOG_INFO(L"Starting ProjectorSwitch");
+
 	// options to disable DPI awareness if desired (as an alternative to PMV2 above):
 	// Option 1: completely DPI-unaware (bitmap-scaled, blur on >100%)
 	// SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_UNAWARE);
@@ -492,6 +539,8 @@ int APIENTRY wWinMain(
 	CHandle appMutex(CreateMutex(nullptr, TRUE, AppName.c_str()));
 	if (GetLastError() == ERROR_ALREADY_EXISTS)
 	{
+		LOG_WARN(L"Another instance is already running");
+		Logger::Shutdown();
 		return FALSE;
 	}
 
@@ -500,7 +549,10 @@ int APIENTRY wWinMain(
 	INITCOMMONCONTROLSEX commonCtrlsEx{};
 	commonCtrlsEx.dwSize = sizeof(INITCOMMONCONTROLSEX);
 	commonCtrlsEx.dwICC = ICC_WIN95_CLASSES;
-	InitCommonControlsEx(&commonCtrlsEx);
+	if (!InitCommonControlsEx(&commonCtrlsEx))
+	{
+		LOG_ERROR(L"InitCommonControlsEx failed");
+	}
 
 	// Initialize global strings
 	LoadStringW(hInstance, IDS_APP_TITLE, TitleBarCaption, MaxLoadStringLength);
@@ -510,6 +562,8 @@ int APIENTRY wWinMain(
 	// Perform application initialization:
 	if (!InitInstance(hInstance, nCmdShow))
 	{
+		LOG_ERROR(L"InitInstance failed");
+		Logger::Shutdown();
 		return FALSE;
 	}
 
@@ -528,5 +582,8 @@ int APIENTRY wWinMain(
 		}
 	}
 
-	return static_cast<int>(msg.wParam);
+	const int exitCode = static_cast<int>(msg.wParam);
+	LOG_INFO(L"Exiting with code %d", exitCode);
+	Logger::Shutdown();
+	return exitCode;
 }

@@ -108,7 +108,7 @@
       <PreprocessorDefinitions>_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
-      <AdditionalIncludeDirectories>D:\ProjectsPersonal\ApcMonitorCore\ApcMonitorCore;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\ProjectsPersonal\ApcMonitorCore\ApcMonitorCore;D:\ProjectsPersonal\ApcLogger\ApcLogger;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -126,7 +126,7 @@
       <ConformanceMode>true</ConformanceMode>
       <Optimization>MaxSpeed</Optimization>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
-      <AdditionalIncludeDirectories>D:\ProjectsPersonal\ApcMonitorCore\ApcMonitorCore;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\ProjectsPersonal\ApcMonitorCore\ApcMonitorCore;D:\ProjectsPersonal\ApcLogger\ApcLogger;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -172,6 +172,9 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\ApcLogger\ApcLogger\ApcLogger.vcxproj">
+      <Project>{0116e484-6881-4fa2-a8ee-b4967ab22b12}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\..\ApcMonitorCore\ApcMonitorCore\ApcMonitorCore.vcxproj">
       <Project>{b52ea748-babe-450c-ab47-e052bfbeaa60}</Project>
     </ProjectReference>
