@@ -27,5 +27,6 @@ private:
 	static RECT CalculateTargetRect(RECT mediaMonitorRect, HWND mediaWindowHandle);
 	static void InternalDisplay(HWND windowHandle, RECT targetRect);
 	static void InternalDisplaySimple(const HWND windowHandle, const RECT targetRect);
+	static void ForceZoomWindowForeground(const HWND windowHandle);
 };
 

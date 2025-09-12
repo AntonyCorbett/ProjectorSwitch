@@ -197,6 +197,57 @@ void ZoomService::InternalHide(const HWND windowHandle)
 		SWP_NOCOPYBITS | SWP_NOSENDCHANGING | SWP_SHOWWINDOW);
 }
 
+// Force foreground/top of the topmost band with an RAII guard to ensure detachment (try/finally semantics).
+void ZoomService::ForceZoomWindowForeground(const HWND windowHandle)
+{
+	const HWND fg = GetForegroundWindow();
+	const DWORD thisThread = GetCurrentThreadId();
+	const DWORD fgThread = fg ? GetWindowThreadProcessId(fg, nullptr) : 0;
+	const DWORD targetThread = GetWindowThreadProcessId(windowHandle, nullptr);
+
+	struct AttachGuard  // NOLINT(cppcoreguidelines-special-member-functions)
+	{
+		DWORD Current{};
+		DWORD ForegroundThread{};
+		DWORD TargetThread{};
+		bool AttachedForeground{ false };
+		bool AttachedTarget{ false };
+
+		~AttachGuard()
+		{
+			if (AttachedTarget)
+			{
+				AttachThreadInput(Current, TargetThread, FALSE);
+			}
+
+			if (AttachedForeground)
+			{
+				AttachThreadInput(Current, ForegroundThread, FALSE);
+			}
+		}
+	} guard{ thisThread, fgThread, targetThread };
+
+	if (fgThread && (fgThread != thisThread))
+	{
+		guard.AttachedForeground = AttachThreadInput(thisThread, fgThread, TRUE) != FALSE;
+	}
+
+	if (targetThread && (targetThread != thisThread))
+	{
+		guard.AttachedTarget = AttachThreadInput(thisThread, targetThread, TRUE) != FALSE;
+	}
+
+	BringWindowToTop(windowHandle);
+	SetForegroundWindow(windowHandle);
+
+	// Assert z-order again without moving/sizing.
+	SetWindowPos(
+		windowHandle,
+		HWND_TOPMOST,
+		0, 0, 0, 0,
+		SWP_NOMOVE | SWP_NOSIZE | SWP_NOOWNERZORDER | SWP_NOSENDCHANGING);
+}
+
 void ZoomService::InternalDisplay(const HWND windowHandle, const RECT targetRect)
 {
 	if (!IsWindow(windowHandle))
@@ -239,17 +290,19 @@ void ZoomService::InternalDisplay(const HWND windowHandle, const RECT targetRect
 	// If SetLayeredWindowAttributes fails, we'll still show without fade.
 	const BOOL setAlpha0Ok = SetLayeredWindowAttributes(windowHandle, 0, 0 /* alpha */, LWA_ALPHA);
 
-	// Uncloak or show without activation to avoid flicker.
+	// Uncloak or show and allow activation (no NOACTIVATE) so we can become topmost of the topmost band.
 	if (canCloak)
 	{
 		constexpr BOOL uncloak = FALSE;
 		DwmSetWindowAttribute(windowHandle, DWMWA_CLOAK, &uncloak, sizeof(uncloak));
-		ShowWindow(windowHandle, SW_SHOWNOACTIVATE);
+		ShowWindow(windowHandle, SW_SHOW);
 	}
 	else
 	{
-		ShowWindow(windowHandle, SW_SHOWNOACTIVATE);
+		ShowWindow(windowHandle, SW_SHOW);
 	}
+
+	ForceZoomWindowForeground(windowHandle);
 
 	// If alpha was set successfully, animate to full opacity.
 	if (setAlpha0Ok)
@@ -281,8 +334,6 @@ void ZoomService::InternalDisplay(const HWND windowHandle, const RECT targetRect
 
 	// Ensure a clean repaint after showing.
 	RedrawWindow(windowHandle, nullptr, nullptr, RDW_INVALIDATE | RDW_ALLCHILDREN | RDW_UPDATENOW);
-
-	SetForegroundWindow(windowHandle);
 
 	// Re-enable DWM transitions.
 	disableTransitions = FALSE;
