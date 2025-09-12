@@ -8,14 +8,18 @@ Application logs are stored in teh **Logs** folder (within your installation fol
 
 **Optional command-line arguments:**
 
-  ProjectorSwitch.exe [options]
-	Options:
-	  --help | -h | /?         Show help dialog and exit.
-	  --toggle                 Toggle the Zoom window once.
-	  --no-gui                 Run headless (no window).
-	  --monitor <key|index>    Preselect monitor (Key or 1-based index).
+		--help | -h | /?         Show help dialog and exit.
+  
+		--toggle                 Toggle the Zoom window once.
+  
+		--no-gui                 Run headless (no window).
+  
+		--monitor <key|index>    Preselect monitor (Key or 1-based index).
 	
-	Examples:
-	  ProjectorSwitch.exe --toggle --no-gui
-    ProjectorSwitch.exe --monitor 2
-	  ProjectorSwitch.exe --monitor MONITOR_KEY_STRING
+ 	Examples:
+  
+		ProjectorSwitch.exe --toggle --no-gui
+  
+		ProjectorSwitch.exe --monitor 2
+  
+		ProjectorSwitch.exe --monitor MONITOR_KEY_STRING
