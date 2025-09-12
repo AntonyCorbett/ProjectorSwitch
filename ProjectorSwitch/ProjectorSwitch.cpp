@@ -525,16 +525,16 @@ int APIENTRY wWinMain(
 	// Set DPI awareness to per-monitor v2
 	SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
 
-	// Initialize logger as early as possible
-	const std::filesystem::path base = GetCurrentFolder();
-	Logger::Init(L"ProjectorSwitch", base / L"Logs");
-	LOG_INFO(L"Starting ProjectorSwitch");
-
 	// options to disable DPI awareness if desired (as an alternative to PMV2 above):
 	// Option 1: completely DPI-unaware (bitmap-scaled, blur on >100%)
 	// SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_UNAWARE);
 	// Option 2: DPI-unaware (GDI-scaled) on Win10+ for slightly better scaling when moving across monitors
 	// SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_UNAWARE_GDISCALED);
+
+	// Initialize logger as early as possible
+	const std::filesystem::path base = GetCurrentFolder();
+	Logger::Init(L"ProjectorSwitch", base / L"Logs");
+	LOG_INFO(L"Starting ProjectorSwitch");
 
 	CHandle appMutex(CreateMutex(nullptr, TRUE, AppName.c_str()));
 	if (GetLastError() == ERROR_ALREADY_EXISTS)
