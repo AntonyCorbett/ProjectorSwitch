@@ -9,6 +9,7 @@
 #include "ProjectorSwitch.h"
 
 #include <filesystem>
+#include <shellapi.h> // CommandLineToArgvW
 
 #include "MonitorService.h"
 #include "SettingsService.h"
@@ -46,6 +47,17 @@ namespace
 	const std::wstring AppName = L"ApcProjSw";
 	UINT CurrentDpi = BaseDpi;
 
+	struct CommandLineOptions
+	{
+		bool ShowHelp = false;
+		bool NoGui = false;
+		bool Toggle = false;
+		std::wstring MonitorArg; // Key or 1-based index as string
+		std::vector<std::wstring> Unknown;
+	};
+
+	CommandLineOptions CmdOptions; // parsed options for this process
+
 	/// <summary>
 	/// Scales an integer value based on the current DPI.
 	/// </summary>
@@ -54,6 +66,171 @@ namespace
 	int Scale(const int value)
 	{
 		return MulDiv(value, static_cast<int>(CurrentDpi), BaseDpi);
+	}
+
+	std::wstring& GetCurrentFolder()
+	{
+		static std::wstring currentFolder;
+		if (currentFolder.empty())
+		{
+			wchar_t buffer[MAX_PATH];
+			GetCurrentDirectoryW(MAX_PATH, buffer);
+			currentFolder = buffer;
+		}
+		return currentFolder;
+	}
+
+	std::vector<std::wstring> GetArgs()
+	{
+		int argc = 0;
+		LPWSTR* argv = CommandLineToArgvW(GetCommandLineW(), &argc);
+		std::vector<std::wstring> args;
+		if (argv)
+		{
+			args.reserve(static_cast<size_t>(argc));
+			for (int i = 0; i < argc; ++i)
+			{
+				args.emplace_back(argv[i]);
+			}
+			LocalFree(reinterpret_cast<HLOCAL>(argv));
+		}
+		return args;
+	}
+
+	bool IsNumber(const std::wstring& s)
+	{
+		if (s.empty())
+		{
+			return false;
+		}
+
+		for (const wchar_t ch : s)
+		{
+			if (ch < L'0' || ch > L'9')
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+
+	void ShowHelp()
+	{
+		const wchar_t* help =
+			L"ProjectorSwitch - command-line options\n\n"
+			L"Usage:\n"
+			L"  ProjectorSwitch.exe [options]\n\n"
+			L"Options:\n"
+			L"  --help | -h | /?         Show this help and exit.\n"
+			L"  --toggle                 Toggle the Zoom window once.\n"
+			L"  --no-gui                 Run headless (no window).\n"
+			L"  --monitor <key|index>    Preselect monitor (Key or 1-based index).\n"
+			L"\n"
+			L"Examples:\n"
+			L"  ProjectorSwitch.exe --toggle --no-gui\n"
+			L"  ProjectorSwitch.exe --monitor 2\n"
+			L"  ProjectorSwitch.exe --monitor \"MONITOR_KEY_STRING\"\n";
+
+		MessageBoxW(nullptr, help, L"ProjectorSwitch Help", MB_OK | MB_ICONINFORMATION | MB_SETFOREGROUND | MB_TOPMOST);
+	}
+
+	void ParseCommandLine(const std::vector<std::wstring>& args, CommandLineOptions& out)
+	{
+		// start at 1 to skip argv[0] (exe path)
+		for (size_t i = 1; i < args.size(); ++i)
+		{
+			const std::wstring& a = args[i];
+			if (a == L"--help" || a == L"-h" || a == L"/?")
+			{
+				out.ShowHelp = true;
+			}
+			else if (a == L"--no-gui")
+			{
+				out.NoGui = true;
+			}
+			else if (a == L"--toggle")
+			{
+				out.Toggle = true;
+			}
+			else if (a == L"--monitor")
+			{
+				if (i + 1 < args.size())
+				{
+					out.MonitorArg = args[++i];
+				}
+				else
+				{
+					out.Unknown.push_back(a); // missing value; track as unknown for now
+				}
+			}
+			else
+			{
+				out.Unknown.push_back(a);
+			}
+		}
+	}
+
+	/// <summary>
+	/// Attempts to apply a monitor selection argument.
+	/// If numeric, treats as 1-based index into current monitors.
+	/// If string, matches against MonitorData.Key or FriendlyName or DeviceName (exact match).
+	/// Persists selection via SettingsService so UI/startup honors it.
+	/// </summary>
+	bool ApplyMonitorSelection(const std::wstring& arg)
+	{
+		if (arg.empty()) return false;
+
+		constexpr MonitorService ms;
+		const auto monitors = ms.GetMonitorsData();
+		if (monitors.empty())
+		{
+			LOG_WARN(L"No monitors enumerated when applying --monitor");
+			return false;
+		}
+
+		int index = -1;
+
+		if (IsNumber(arg))
+		{
+			// 1-based index for CLI friendliness
+			const unsigned long oneBased = std::wcstoul(arg.c_str(), nullptr, 10);
+			if (oneBased >= 1 && oneBased <= monitors.size())
+			{
+				index = static_cast<int>(oneBased - 1);
+			}
+			else
+			{
+				LOG_WARN(L"--monitor index %lu out of range (1..%zu)", oneBased, monitors.size());
+				return false;
+			}
+		}
+		else
+		{
+			for (size_t i = 0; i < monitors.size(); ++i)
+			{
+				const auto& m = monitors[i];
+				if (_wcsicmp(m.Key.c_str(), arg.c_str()) == 0 ||
+					_wcsicmp(m.FriendlyName.c_str(), arg.c_str()) == 0 ||
+					_wcsicmp(m.DeviceName.c_str(), arg.c_str()) == 0)
+				{
+					index = static_cast<int>(i);
+					break;
+				}
+			}
+			if (index < 0)
+			{
+				LOG_WARN(L"--monitor value '%ls' did not match any Key/FriendlyName/DeviceName", arg.c_str());
+				return false;
+			}
+		}
+
+		const MonitorData& md = monitors[static_cast<size_t>(index)];
+		const SettingsService ss;
+		ss.SaveSelectedMonitorKey(md.Key);
+		ss.SaveSelectedMonitorRect(md.MonitorRect);
+		LOG_INFO(L"Applied monitor selection via CLI: index=%d key=%ls rect=[%ld,%ld,%ld,%ld]",
+			index + 1, md.Key.c_str(), md.MonitorRect.left, md.MonitorRect.top, md.MonitorRect.right, md.MonitorRect.bottom);
+		return true;
 	}
 
 	/// <summary>
@@ -498,18 +675,6 @@ namespace
 
 		return TRUE;
 	}
-
-	std::wstring& GetCurrentFolder()
-	{
-		static std::wstring currentFolder;
-		if (currentFolder.empty())
-		{
-			wchar_t buffer[MAX_PATH];
-			GetCurrentDirectoryW(MAX_PATH, buffer);
-			currentFolder = buffer;
-		}
-		return currentFolder;
-	}
 } // end anonymous namespace
 
 // Main entry point for application
@@ -521,6 +686,17 @@ int APIENTRY wWinMain(
 {
 	UNREFERENCED_PARAMETER(hPrevInstance);
 	UNREFERENCED_PARAMETER(lpCmdLine);
+
+	// Parse command-line early (before logger/UI)
+	const auto args = GetArgs();
+	ParseCommandLine(args, CmdOptions);
+
+	// If help requested, show it and exit early (no logger needed)
+	if (CmdOptions.ShowHelp)
+	{
+		ShowHelp();
+		return 0;
+	}
 
 	// Set DPI awareness to per-monitor v2
 	SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
@@ -536,12 +712,45 @@ int APIENTRY wWinMain(
 	Logger::Init(L"ProjectorSwitch", base / L"Logs");
 	LOG_INFO(L"Starting ProjectorSwitch");
 
+	if (!CmdOptions.Unknown.empty())
+	{
+		std::wstring unk;
+		for (size_t i = 0; i < CmdOptions.Unknown.size(); ++i)
+		{
+			if (i) unk += L", ";
+			unk += CmdOptions.Unknown[i];
+		}
+		LOG_WARN(L"Unknown command-line argument(s): %ls", unk.c_str());
+	}
+
+	// Single-instance guard
 	CHandle appMutex(CreateMutex(nullptr, TRUE, AppName.c_str()));
 	if (GetLastError() == ERROR_ALREADY_EXISTS)
 	{
 		LOG_WARN(L"Another instance is already running");
 		Logger::Shutdown();
 		return FALSE;
+	}
+
+	// Headless mode: do not create UI
+	if (CmdOptions.NoGui)
+	{
+		LOG_INFO(L"Running in headless mode (--no-gui)");
+		if (!CmdOptions.MonitorArg.empty())
+		{
+			ApplyMonitorSelection(CmdOptions.MonitorArg);
+		}
+
+		if (CmdOptions.Toggle)
+		{
+			LOG_INFO(L"Headless --toggle requested");
+			const std::unique_ptr<ZoomService> zs(new ZoomService(new AutomationService(), new ProcessesService()));
+			zs->Toggle();
+		}
+
+		LOG_INFO(L"Headless run complete");
+		Logger::Shutdown();
+		return 0;
 	}
 
 	// Initialize common controls
@@ -559,12 +768,25 @@ int APIENTRY wWinMain(
 	LoadStringW(hInstance, IDC_PROJECTOR_SWITCH, MainWindowClass, MaxLoadStringLength);
 	ProjectSwitchRegisterClass(hInstance);
 
+	// If --monitor is provided, persist selection before window creation so UI can preselect it
+	if (!CmdOptions.MonitorArg.empty())
+	{
+		ApplyMonitorSelection(CmdOptions.MonitorArg);
+	}
+
 	// Perform application initialization:
 	if (!InitInstance(hInstance, nCmdShow))
 	{
 		LOG_ERROR(L"InitInstance failed");
 		Logger::Shutdown();
 		return FALSE;
+	}
+
+	// If --toggle provided with UI, trigger one-shot toggle after window init
+	if (CmdOptions.Toggle && MainWindowHandle)
+	{
+		LOG_INFO(L"Queuing one-shot toggle (--toggle) after UI initialization");
+		PostMessage(MainWindowHandle, WM_COMMAND, MAKEWPARAM(ButtonId, BN_CLICKED), 0);
 	}
 
 	const HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_PROJECTOR_SWITCH));
