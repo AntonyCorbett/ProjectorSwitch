@@ -23,3 +23,6 @@ Application logs are stored in the **Logs** folder (within your installation fol
 		ProjectorSwitch.exe --monitor 2
   
 		ProjectorSwitch.exe --monitor MONITOR_KEY_STRING
+
+
+If you want to build from source, please place ApcLogger and ApcMonitorSource repositories side bu side with ProjectorSwitch. (https://github.com/AntonyCorbett/ApcLogger and https://github.com/AntonyCorbett/ApcMonitorCore)
