@@ -4,7 +4,7 @@ Download ProjectorSwitch.exe into a folder and run it. Select the target monitor
 
 The application stores its settings in the settings.ini file in the same folder as the executable file, so make sure you have write permissions to the folder.
 
-Application logs are stored in teh **Logs** folder (within your installation folder).
+Application logs are stored in the **Logs** folder (within your installation folder).
 
 **Optional command-line arguments:**
 
