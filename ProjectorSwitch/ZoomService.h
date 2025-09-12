@@ -10,7 +10,7 @@ public:
 	ZoomService(AutomationService *automationService, ProcessesService *processesService);
 	~ZoomService();
 
-	DisplayWindowResult Toggle(bool fade);
+	DisplayWindowResult Toggle();
 
 private:
 	RECT mediaWindowOriginalPosition_;
@@ -25,8 +25,7 @@ private:
 	static RECT GetTargetMonitorRect();
 	static RECT GetPrimaryMonitorRect();
 	static RECT CalculateTargetRect(RECT mediaMonitorRect, HWND mediaWindowHandle);
-	static void InternalDisplay(HWND windowHandle, RECT targetRect);
-	static void InternalDisplaySimple(const HWND windowHandle, const RECT targetRect);
+	static void InternalDisplay(HWND windowHandle, RECT targetRect);	
 	static void ForceZoomWindowForeground(const HWND windowHandle);
 };
 

@@ -12,6 +12,11 @@ namespace
 	const std::wstring ZoomProcessName = L"Zoom.exe";
 }
 
+/// <summary>
+/// Constructs a ZoomService object and initializes its member variables.
+/// </summary>
+/// <param name="automationService">Pointer to an AutomationService instance used by the ZoomService.</param>
+/// <param name="processesService">Pointer to a ProcessesService instance used by the ZoomService.</param>
 ZoomService::ZoomService(AutomationService* automationService, ProcessesService *processesService)
 	: mediaWindowOriginalPosition_({ 0,0,0,0 })
 	, cachedDesktopWindow_(nullptr)
@@ -20,6 +25,9 @@ ZoomService::ZoomService(AutomationService* automationService, ProcessesService 
 {	
 }
 
+/// <summary>
+/// Destroys the ZoomService object and releases associated resources.
+/// </summary>
 ZoomService::~ZoomService()
 {
 	if (cachedDesktopWindow_ != nullptr)
@@ -41,7 +49,15 @@ ZoomService::~ZoomService()
 	}
 }
 
-DisplayWindowResult ZoomService::Toggle(const bool fade)
+/// <summary>
+/// Toggles the display state of the Zoom media window, optionally using a fade effect.
+/// Handles error conditions such as Zoom not running or the media window not being found.
+/// </summary>
+/// <returns>
+/// A DisplayWindowResult object indicating whether the operation was successful
+/// and containing an error message if it failed.
+/// </returns>
+DisplayWindowResult ZoomService::Toggle()
 {
 	DisplayWindowResult result;
 
@@ -111,20 +127,20 @@ DisplayWindowResult ZoomService::Toggle(const bool fade)
 	else
 	{
 		mediaWindowOriginalPosition_ = mediaWindowPos;
-
-		if (fade)
-		{
-			InternalDisplay(hwnd, targetRect);
-		}
-		else
-		{
-			InternalDisplaySimple(hwnd, targetRect);
-		}
+		InternalDisplay(hwnd, targetRect);
 	}
 
 	return result;
 }
 
+/// <summary>
+/// Retrieves the rectangle of the primary monitor, preferring the work area if available.
+/// </summary>
+/// <returns>
+/// A RECT structure representing the work area of the primary monitor if it is not empty;
+/// otherwise, the full monitor rectangle. Returns an empty RECT if no primary monitor
+/// is found.
+/// </returns>
 RECT ZoomService::GetPrimaryMonitorRect()
 {
 	constexpr MonitorService monitorService;
@@ -146,6 +162,17 @@ RECT ZoomService::GetPrimaryMonitorRect()
 	return RECT{};
 }
 
+/// <summary>
+/// Calculates the target rectangle for a media window by adjusting the given monitor rectangle
+/// to account for the window's non-client borders.
+/// </summary>
+/// <param name="mediaMonitorRect">The rectangle representing the area of the monitor where
+/// the media window is displayed.</param>
+/// <param name="mediaWindowHandle">The handle to the media window whose borders are to
+/// be considered.</param>
+/// <returns>
+/// A RECT structure representing the adjusted rectangle that includes the window's borders.
+/// </returns>
 RECT ZoomService::CalculateTargetRect(const RECT mediaMonitorRect, const HWND mediaWindowHandle)
 {
 	RECT mediaWindowClientRect;
@@ -172,6 +199,11 @@ RECT ZoomService::CalculateTargetRect(const RECT mediaMonitorRect, const HWND me
 	return result;
 }
 
+/// <summary>
+/// Hides or repositions the specified window, ensuring it is placed at a suitable location
+/// if its original position is not set.
+/// </summary>
+/// <param name="windowHandle">Handle to the window to be hidden or repositioned.</param>
 void ZoomService::InternalHide(const HWND windowHandle)
 {
 	SetForegroundWindow(windowHandle);
@@ -197,7 +229,12 @@ void ZoomService::InternalHide(const HWND windowHandle)
 		SWP_NOCOPYBITS | SWP_NOSENDCHANGING | SWP_SHOWWINDOW);
 }
 
-// Force foreground/top of the topmost band with an RAII guard to ensure detachment (try/finally semantics).
+/// <summary>
+/// Force the specified window to the foreground, even if our process is not foreground. This
+/// helps to ensure the Zoom window is on top of all other windows, even if another
+/// topmost window has focus.
+/// </summary>
+/// <param name="windowHandle"></param>
 void ZoomService::ForceZoomWindowForeground(const HWND windowHandle)
 {
 	const HWND fg = GetForegroundWindow();
@@ -248,6 +285,13 @@ void ZoomService::ForceZoomWindowForeground(const HWND windowHandle)
 		SWP_NOMOVE | SWP_NOSIZE | SWP_NOOWNERZORDER | SWP_NOSENDCHANGING);
 }
 
+/// <summary>
+/// Displays a window at a specified position and size with a smooth fade-in animation, handling DWM
+/// transitions and window cloaking for a seamless visual effect.
+/// </summary>
+/// <param name="windowHandle">Handle to the window to be displayed and animated.</param>
+/// <param name="targetRect">The target rectangle specifying the desired position and size
+/// of the window, in screen coordinates.</param>
 void ZoomService::InternalDisplay(const HWND windowHandle, const RECT targetRect)
 {
 	if (!IsWindow(windowHandle))
@@ -340,27 +384,26 @@ void ZoomService::InternalDisplay(const HWND windowHandle, const RECT targetRect
 	DwmSetWindowAttribute(windowHandle, DWMWA_TRANSITIONS_FORCEDISABLED, &disableTransitions, sizeof(disableTransitions));
 }
 
-void ZoomService::InternalDisplaySimple(const HWND windowHandle, const RECT targetRect)
-{
-	ShowWindow(windowHandle, SW_NORMAL);
-	SetForegroundWindow(windowHandle);
-
-	SetWindowPos(
-		windowHandle, 
-		HWND_TOPMOST,
-		targetRect.left,
-		targetRect.top,
-		targetRect.right - targetRect.left,
-		targetRect.bottom - targetRect.top,		
-		SWP_NOCOPYBITS | SWP_NOSENDCHANGING | SWP_SHOWWINDOW);	
-}
-
+/// <summary>
+/// Retrieves the rectangle of the target monitor as specified in the settings.
+/// </summary>
+/// <returns>
+/// A RECT structure representing the area of the selected monitor.
+/// </returns>
 RECT ZoomService::GetTargetMonitorRect()
 {
 	const SettingsService settingsService;
 	return settingsService.LoadSelectedMonitorRect();
 }
 
+/// <summary>
+/// Attempts to locate the Zoom media window and returns the result, including status and
+/// any found elements.
+/// </summary>
+/// <returns>
+/// A FindWindowsResult structure containing information about whether the desktop and Zoom
+/// media window were found, if Zoom is running, and any error messages.
+/// </returns>
 FindWindowsResult ZoomService::FindMediaWindow()
 {
 	FindWindowsResult result;
@@ -409,6 +452,10 @@ FindWindowsResult ZoomService::FindMediaWindow()
 	return result;
 }
 
+/// <summary>
+/// Attempts to locate the Zoom media window.
+/// </summary>
+/// <returns>An IUIAutomationElement representing the Zoom media window, or nullptr if not found.</returns>
 IUIAutomationElement* ZoomService::LocateZoomMediaWindow() const
 {
 	if (cachedDesktopWindow_ == nullptr)
@@ -417,7 +464,7 @@ IUIAutomationElement* ZoomService::LocateZoomMediaWindow() const
 	}
 
 	// Find the Zoom media window by searching for the specific class name and name.
-	// The class name and name may vary based on the Zoom version and configuration.
+	// The class name and name may vary based on the Zoom version and configuration!
 	
 	IUIAutomation* pAutomation = automationService_->GetAutomationInterface();
 	

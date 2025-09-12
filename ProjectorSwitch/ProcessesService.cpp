@@ -4,6 +4,8 @@
 #include "ProcessesService.h"  
 #include "HandleDeleter.h"
 
+
+/// Retrieves a list of process handles for all processes matching the specified name.
 // ReSharper disable once CppMemberFunctionMayBeStatic
 std::vector<std::unique_ptr<void, HandleDeleter>> ProcessesService::GetProcessesByName(const std::wstring& name)
 {

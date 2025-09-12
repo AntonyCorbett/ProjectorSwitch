@@ -22,6 +22,10 @@ namespace
 	const std::wstring PosBottom = L"Bottom";
 }
 
+/// <summary>
+/// Constructs a SettingsService object and initializes the path to the settings
+/// file in the current directory.
+/// </summary>
 SettingsService::SettingsService()
 {
 	// Get the current directory
@@ -32,6 +36,11 @@ SettingsService::SettingsService()
 
 SettingsService::~SettingsService() = default;
 
+/// <summary>
+/// Saves the window placement settings to persistent storage.
+/// </summary>
+/// <param name="placement">A reference to a WINDOWPLACEMENT structure containing the
+/// window's position, size, and state information to be saved.</param>
 void SettingsService::SaveWindowPlacement(const WINDOWPLACEMENT& placement) const
 {
 	InternalSaveInt(WindowSection, ShowCmd, static_cast<int>(placement.showCmd));
@@ -46,6 +55,11 @@ void SettingsService::SaveWindowPlacement(const WINDOWPLACEMENT& placement) cons
 	InternalSaveInt(WindowSection, PosBottom, placement.rcNormalPosition.bottom);
 }
 
+/// <summary>
+/// Loads and returns the window placement settings from persistent storage.
+/// </summary>
+/// <returns>A WINDOWPLACEMENT structure containing the loaded window
+/// position, size, and display state.</returns>
 WINDOWPLACEMENT SettingsService::LoadWindowPlacement() const
 {
 	WINDOWPLACEMENT wp;
@@ -65,6 +79,11 @@ WINDOWPLACEMENT SettingsService::LoadWindowPlacement() const
 	return wp;
 }
 
+/// <summary>
+/// Saves the coordinates of the selected monitor rectangle to persistent settings.
+/// </summary>
+/// <param name="rect">The RECT structure containing the coordinates
+/// (left, top, right, bottom) of the selected monitor.</param>
 void SettingsService::SaveSelectedMonitorRect(const RECT rect) const
 {
 	InternalSaveInt(SettingsSection, SelectedMonitorL, rect.left);
@@ -73,6 +92,11 @@ void SettingsService::SaveSelectedMonitorRect(const RECT rect) const
 	InternalSaveInt(SettingsSection, SelectedMonitorB, rect.bottom);
 }
 
+/// <summary>
+/// Loads the rectangle coordinates of the selected monitor from settings.
+/// </summary>
+/// <returns>A RECT structure containing the left, top, right, and bottom
+/// coordinates of the selected monitor as loaded from the settings.</returns>
 RECT SettingsService::LoadSelectedMonitorRect() const
 {
 	RECT rect;
@@ -85,22 +109,42 @@ RECT SettingsService::LoadSelectedMonitorRect() const
 	return rect;
 }
 
+/// <summary>
+/// Saves the key of the selected monitor to persistent settings.
+/// </summary>
+/// <param name="key">The monitor Key value.</param>
 void SettingsService::SaveSelectedMonitorKey(const std::wstring& key) const
 {
 	InternalSaveString(SettingsSection, SelectedMonitorKey, key);
 }
 
+/// <summary>
+/// Loads the key of the selected monitor from persistent settings.
+/// </summary>
+/// <returns>The monitor Key value.</returns>
 std::wstring SettingsService::LoadSelectedMonitorKey() const
 {
 	return InternalLoadString(SettingsSection, SelectedMonitorKey);
 }
 
+/// <summary>
+/// Saves a string value to a specified section and key in the settings file.
+/// </summary>
+/// <param name="section">The section in the settings file where the key-value pair will be stored.</param>
+/// <param name="keyName">The name of the key to which the value will be assigned.</param>
+/// <param name="keyValue">The string value to be saved under the specified key.</param>
 void SettingsService::InternalSaveString(
 	const std::wstring& section, const std::wstring& keyName, const std::wstring& keyValue) const
 {
 	WritePrivateProfileString(section.c_str(), keyName.c_str(), keyValue.c_str(), pathToFile_.c_str());
 }
 
+/// <summary>
+/// Saves an integer value to a specified section and key in the settings file.
+/// </summary>
+/// <param name="section">The section in the settings file where the key-value pair will be stored.</param>
+/// <param name="keyName">The name of the key to which the value will be assigned.</param>
+/// <param name="keyValue">The integer value to be saved under the specified key.</param>
 void SettingsService::InternalSaveInt(
 	const std::wstring& section, const std::wstring& keyName, const int keyValue) const
 {
@@ -108,6 +152,13 @@ void SettingsService::InternalSaveInt(
 	InternalSaveString(section, keyName, strValue);
 }
 
+/// <summary>
+/// Retrieves a string value from a configuration file for a given section and key.
+/// </summary>
+/// <param name="section">The name of the section in the configuration file.</param>
+/// <param name="keyName">The name of the key whose value is to be retrieved.</param>
+/// <returns>The string value associated with the specified section and key. Returns
+/// an empty string if the key is not found.</returns>
 std::wstring SettingsService::InternalLoadString(
 	const std::wstring& section, const std::wstring& keyName) const
 {
@@ -122,6 +173,14 @@ std::wstring SettingsService::InternalLoadString(
 	return std::wstring{ buffer };
 }
 
+/// <summary>
+/// Loads an integer value from a configuration file for a given section and key.
+/// </summary>
+/// <param name="section">The name of the section in the configuration file.</param>
+/// <param name="keyName">The name of the key whose value is to be retrieved.</param>
+/// <param name="defaultKeyValue">The default value to return if the key is not found.</param>
+/// <returns>The integer value associated with the specified section and key.
+/// Returns the default value if the key is not found.</returns>
 int SettingsService::InternalLoadInt(
 	const std::wstring& section, const std::wstring& keyName, const int defaultKeyValue) const
 {

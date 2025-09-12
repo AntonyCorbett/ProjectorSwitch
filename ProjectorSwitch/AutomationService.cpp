@@ -1,5 +1,9 @@
 #include "AutomationService.h"
 
+/// <summary>
+/// Initializes an instance of the AutomationService class, setting up the
+/// COM library and UI Automation interfaces.
+/// </summary>
 AutomationService::AutomationService()
 	: automation_(nullptr)
 	, desktopElement_(nullptr)
@@ -39,6 +43,9 @@ AutomationService::AutomationService()
 	}
 }
 
+/// <summary>
+/// Destructor for the AutomationService class. Cleans up UI Automation resources.
+/// </summary>
 AutomationService::~AutomationService()
 {
 	if (desktopElement_)
@@ -56,6 +63,9 @@ AutomationService::~AutomationService()
 	CoUninitialize();
 }
 
+/// <summary>
+/// Locates the desktop element in the UI Automation tree.
+/// </summary>
 void AutomationService::LocateDesktop()
 {
 	HRESULT hr = automation_->GetRootElement(&desktopElement_);

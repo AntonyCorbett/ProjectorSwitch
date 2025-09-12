@@ -239,7 +239,7 @@ namespace
 	{
 		if (TheZoomService)
 		{
-			TheZoomService->Toggle(true);
+			TheZoomService->Toggle();
 
 			// Keep window topmost after toggling
 			SetWindowPos(MainWindowHandle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);

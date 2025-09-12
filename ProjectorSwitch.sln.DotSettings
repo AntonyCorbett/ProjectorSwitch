@@ -11,4 +11,5 @@
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=SETMINVISIBLE/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=Shcore/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=toolhelp/@EntryIndexedValue">True</s:Boolean>
-	<s:Boolean x:Key="/Default/UserDictionary/Words/=wbuf/@EntryIndexedValue">True</s:Boolean></wpf:ResourceDictionary>
+	<s:Boolean x:Key="/Default/UserDictionary/Words/=wbuf/@EntryIndexedValue">True</s:Boolean>
+	<s:Boolean x:Key="/Default/UserDictionary/Words/=WINDOWPLACEMENT/@EntryIndexedValue">True</s:Boolean></wpf:ResourceDictionary>

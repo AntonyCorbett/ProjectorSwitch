@@ -1,6 +1,7 @@
 #include <Windows.h>
 #include "WindowPlacementService.h"
 
+/// Saves the current window placement of the specified window to persistent storage.
 void WindowPlacementService::SaveWindowPlace(const HWND mainWindow) const
 {
     WINDOWPLACEMENT placement;
@@ -10,6 +11,7 @@ void WindowPlacementService::SaveWindowPlace(const HWND mainWindow) const
     settingsService_->SaveWindowPlacement(placement);
 }
 
+/// Validates that the provided WINDOWPLACEMENT structure has a valid normal position.
 bool WindowPlacementService::IsValidPlacement(const WINDOWPLACEMENT& placement)
 {
     return
@@ -17,6 +19,7 @@ bool WindowPlacementService::IsValidPlacement(const WINDOWPLACEMENT& placement)
         placement.rcNormalPosition.right - placement.rcNormalPosition.left > 0;
 }
 
+/// Restores the window placement of the specified window from persistent storage.
 void WindowPlacementService::RestoreWindowPlace(const HWND mainWindow) const
 {
     WINDOWPLACEMENT placement;
