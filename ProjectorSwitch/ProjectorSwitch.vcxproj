@@ -169,6 +169,7 @@
     <Image Include="ProjectorSwitch.ico" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="browse.hints" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>

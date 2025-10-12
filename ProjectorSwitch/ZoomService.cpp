@@ -216,18 +216,18 @@ void ZoomService::InternalHide(const HWND windowHandle)
 		// Place the window's normal (restore) position on the primary monitor so future restores happen there.
 		const RECT primaryMonitorRect = GetPrimaryMonitorRect();
 
-		RECT normal{};
-		normal.left = primaryMonitorRect.left + 10;
-		normal.top = primaryMonitorRect.top + 10;
-		normal.right = normal.left + 450;
-		normal.bottom = normal.top + 300;
+		RECT restoreRect{};
+		restoreRect.left = primaryMonitorRect.left + 10;
+		restoreRect.top = primaryMonitorRect.top + 10;
+		restoreRect.right = restoreRect.left + 450;
+		restoreRect.bottom = restoreRect.top + 300;
 
 		WINDOWPLACEMENT wp{};
 		wp.length = sizeof(wp);
 		if (GetWindowPlacement(windowHandle, &wp))
 		{
 			wp.showCmd = SW_SHOWNORMAL;               // define where it should restore to
-			wp.rcNormalPosition = normal;             // set restore rect on primary
+			wp.rcNormalPosition = restoreRect;             // set restore rect on primary
 			SetWindowPlacement(windowHandle, &wp);
 		}
 
