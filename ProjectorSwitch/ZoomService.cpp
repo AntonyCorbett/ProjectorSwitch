@@ -190,11 +190,13 @@ RECT ZoomService::CalculateTargetRect(const RECT mediaMonitorRect, const HWND me
 	const auto xBorder = (windowWidth - clientWidth) / 2;
 	const auto yBorder = (windowHeight - clientHeight) / 2;
 
-	RECT result;
-	result.left = mediaMonitorRect.left - xBorder;
-	result.top = mediaMonitorRect.top - yBorder;
-	result.right = mediaMonitorRect.right + (xBorder * 2);
-	result.bottom = mediaMonitorRect.bottom + (yBorder * 2);
+	const RECT result
+	{
+		mediaMonitorRect.left - xBorder,
+		mediaMonitorRect.top - yBorder,
+		mediaMonitorRect.right + (xBorder * 2),
+		mediaMonitorRect.bottom + (yBorder * 2)
+	};
 
 	return result;
 }
@@ -351,14 +353,14 @@ void ZoomService::InternalDisplay(const HWND windowHandle, const RECT targetRect
 	// If alpha was set successfully, animate to full opacity.
 	if (setAlpha0Ok)
 	{
-		const DWORD start = GetTickCount();
+		const ULONGLONG start = GetTickCount64();
 		BYTE alpha;
 
 		do
 		{
 			constexpr DWORD durationMs = 300;
-			const DWORD elapsed = GetTickCount() - start;
-			const DWORD scaled = (elapsed >= durationMs) ? 255 : (elapsed * 255u) / durationMs;
+			const ULONGLONG elapsed = GetTickCount64() - start;
+			const ULONGLONG scaled = (elapsed >= durationMs) ? 255 : (elapsed * 255u) / durationMs;
 			alpha = static_cast<BYTE>(scaled);
 			SetLayeredWindowAttributes(windowHandle, 0, alpha, LWA_ALPHA);
 			if (alpha < 255)

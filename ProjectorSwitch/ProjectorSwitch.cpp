@@ -797,7 +797,7 @@ int APIENTRY wWinMain(
 	while (GetMessage(&msg, nullptr, 0, 0))
 	{
 		// Use the main window handle for accelerator translation
-		if (!TranslateAccelerator(MainWindowHandle, hAccelTable, &msg))
+		if (MainWindowHandle && hAccelTable && !TranslateAccelerator(MainWindowHandle, hAccelTable, &msg))		
 		{
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
