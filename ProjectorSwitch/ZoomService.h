@@ -14,6 +14,7 @@ public:
 
 private:
 	RECT mediaWindowOriginalPosition_;
+	bool mediaWindowWasMinimized_;
 	IUIAutomationElement* cachedDesktopWindow_;	
 	AutomationService* automationService_;
 	ProcessesService* processesService_;		

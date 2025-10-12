@@ -19,6 +19,7 @@ namespace
 /// <param name="processesService">Pointer to a ProcessesService instance used by the ZoomService.</param>
 ZoomService::ZoomService(AutomationService* automationService, ProcessesService *processesService)
 	: mediaWindowOriginalPosition_({ 0,0,0,0 })
+	, mediaWindowWasMinimized_(false)
 	, cachedDesktopWindow_(nullptr)
 	, automationService_(automationService)
 	, processesService_(processesService)	
@@ -126,6 +127,7 @@ DisplayWindowResult ZoomService::Toggle()
 	}
 	else
 	{
+		mediaWindowWasMinimized_ = IsIconic(hwnd) != FALSE;
 		mediaWindowOriginalPosition_ = mediaWindowPos;
 		InternalDisplay(hwnd, targetRect);
 	}
@@ -208,6 +210,39 @@ RECT ZoomService::CalculateTargetRect(const RECT mediaMonitorRect, const HWND me
 /// <param name="windowHandle">Handle to the window to be hidden or repositioned.</param>
 void ZoomService::InternalHide(const HWND windowHandle)
 {
+	// If it was originally minimized, minimize again, but make sure its normal position is on the primary monitor.
+	if (mediaWindowWasMinimized_)
+	{
+		// Place the window's normal (restore) position on the primary monitor so future restores happen there.
+		const RECT primaryMonitorRect = GetPrimaryMonitorRect();
+
+		RECT normal{};
+		normal.left = primaryMonitorRect.left + 10;
+		normal.top = primaryMonitorRect.top + 10;
+		normal.right = normal.left + 450;
+		normal.bottom = normal.top + 300;
+
+		WINDOWPLACEMENT wp{};
+		wp.length = sizeof(wp);
+		if (GetWindowPlacement(windowHandle, &wp))
+		{
+			wp.showCmd = SW_SHOWNORMAL;               // define where it should restore to
+			wp.rcNormalPosition = normal;             // set restore rect on primary
+			SetWindowPlacement(windowHandle, &wp);
+		}
+
+		// Drop out of topmost band before minimizing.
+		SetWindowPos(
+			windowHandle,
+			HWND_NOTOPMOST,
+			0, 0, 0, 0,
+			SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOSENDCHANGING);
+
+		ShowWindowAsync(windowHandle, SW_MINIMIZE);
+		mediaWindowWasMinimized_ = false;
+		return;
+	}
+
 	SetForegroundWindow(windowHandle);
 
 	if (IsRectEmpty(&mediaWindowOriginalPosition_))
@@ -307,6 +342,21 @@ void ZoomService::InternalDisplay(const HWND windowHandle, const RECT targetRect
 	// Disable DWM transitions (min/restore/max animations) during our manual animation.
 	BOOL disableTransitions = TRUE;
 	DwmSetWindowAttribute(windowHandle, DWMWA_TRANSITIONS_FORCEDISABLED, &disableTransitions, sizeof(disableTransitions));
+
+	// If minimized, restore first so SetWindowPos will take effect correctly.
+	if (IsIconic(windowHandle))
+	{
+		ShowWindowAsync(windowHandle, SW_RESTORE);
+
+		// Wait briefly for the window to leave the iconic state.
+		DWORD waited = 0;
+		constexpr DWORD maxWaitMs = 500;
+		while (IsIconic(windowHandle) && waited < maxWaitMs)
+		{
+			Sleep(10);
+			waited += 10;
+		}
+	}
 
 	// Cloak to avoid intermediate frames while moving/sizing (Win8+). Fallback to hide.
 	const bool canCloak = SUCCEEDED(DwmSetWindowAttribute(windowHandle, DWMWA_CLOAK, &disableTransitions, sizeof(disableTransitions)));
