@@ -521,7 +521,7 @@ IUIAutomationElement* ZoomService::LocateZoomMediaWindow() const
 	IUIAutomation* pAutomation = automationService_->GetAutomationInterface();
 	
 	VariantWrapper varName;
-	varName.SetString(L"Zoom Workplace");
+	varName.SetString(L"Zoom Meeting");
 
 	IUIAutomationCondition* nameCondition;
     pAutomation->CreatePropertyCondition(UIA_NamePropertyId, *varName, &nameCondition);
