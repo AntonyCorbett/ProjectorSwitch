@@ -505,7 +505,8 @@ FindWindowsResult ZoomService::FindMediaWindow()
 }
 
 /// <summary>
-/// Attempts to locate the Zoom media window.
+/// Attempts to locate the Zoom media window by finding all windows with matching name/class
+/// and identifying the main window by the presence of "MeetingTopBarInfoButton".
 /// </summary>
 /// <returns>An IUIAutomationElement representing the Zoom media window, or nullptr if not found.</returns>
 IUIAutomationElement* ZoomService::LocateZoomMediaWindow() const
@@ -517,14 +518,14 @@ IUIAutomationElement* ZoomService::LocateZoomMediaWindow() const
 
 	// Find the Zoom media window by searching for the specific class name and name.
 	// The class name and name may vary based on the Zoom version and configuration!
-	
+
 	IUIAutomation* pAutomation = automationService_->GetAutomationInterface();
-	
+
 	VariantWrapper varName;
 	varName.SetString(L"Zoom Meeting");
 
 	IUIAutomationCondition* nameCondition;
-    pAutomation->CreatePropertyCondition(UIA_NamePropertyId, *varName, &nameCondition);
+	pAutomation->CreatePropertyCondition(UIA_NamePropertyId, *varName, &nameCondition);
 	AutomationConditionWrapper nameConditionWrapper(nameCondition);
 
 	VariantWrapper varClassName;
@@ -533,16 +534,76 @@ IUIAutomationElement* ZoomService::LocateZoomMediaWindow() const
 	IUIAutomationCondition* classNameCondition;
 	pAutomation->CreatePropertyCondition(UIA_ClassNamePropertyId, *varClassName, &classNameCondition);
 	AutomationConditionWrapper classNameConditionWrapper(classNameCondition);
-		
-	IUIAutomationCondition* andCondition;	
+
+	IUIAutomationCondition* andCondition;
 	pAutomation->CreateAndCondition(
-		nameConditionWrapper.GetCondition(), 
-		classNameConditionWrapper.GetCondition(), 
+		nameConditionWrapper.GetCondition(),
+		classNameConditionWrapper.GetCondition(),
 		&andCondition);
 	AutomationConditionWrapper andConditionWrapper(andCondition);
 
+	IUIAutomationElementArray* foundElements = nullptr;
+	const HRESULT hrFindAll = cachedDesktopWindow_->FindAll(TreeScope_Children, andConditionWrapper.GetCondition(), &foundElements);
+
+	if (FAILED(hrFindAll) || foundElements == nullptr)
+	{
+		return nullptr;
+	}
+
+	int elementCount = 0;
+	foundElements->get_Length(&elementCount);
+
+	if (elementCount == 0)
+	{
+		foundElements->Release();
+		return nullptr;
+	}
+
+	// If only one window found, assume it's the media window
+	if (elementCount == 1)
+	{
+		IUIAutomationElement* singleElement = nullptr;
+		foundElements->GetElement(0, &singleElement);
+		foundElements->Release();
+		return singleElement;
+	}
+
+	// Multiple windows found - need to identify which is the main window
 	IUIAutomationElement* mediaWindow = nullptr;
-	cachedDesktopWindow_->FindFirst(TreeScope_Children, andConditionWrapper.GetCondition(), &mediaWindow);
-	
+
+	for (int i = 0; i < elementCount; ++i)
+	{
+		IUIAutomationElement* currentElement = nullptr;
+		if (FAILED(foundElements->GetElement(i, &currentElement)) || currentElement == nullptr)
+		{
+			continue;
+		}
+
+		// Check if this window contains the MeetingTopBarInfoButton
+		VariantWrapper varHelpText;
+		varHelpText.SetString(L"MeetingTopBarInfoButton");
+
+		IUIAutomationCondition* helpTextCondition = nullptr;
+		pAutomation->CreatePropertyCondition(UIA_HelpTextPropertyId, *varHelpText, &helpTextCondition);
+		AutomationConditionWrapper helpTextConditionWrapper(helpTextCondition);
+
+		IUIAutomationElement* infoButton = nullptr;
+		const HRESULT hrFindButton = currentElement->FindFirst(TreeScope_Descendants, helpTextConditionWrapper.GetCondition(), &infoButton);
+
+		if (SUCCEEDED(hrFindButton) && infoButton != nullptr)
+		{
+			// This is the main window (has the info button), so skip it
+			infoButton->Release();
+			currentElement->Release();
+		}
+		else
+		{
+			// This is the media window (doesn't have the info button)
+			mediaWindow = currentElement;
+			break;
+		}
+	}
+
+	foundElements->Release();
 	return mediaWindow;
 }
