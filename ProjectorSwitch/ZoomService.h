@@ -28,5 +28,7 @@ private:
 	static RECT CalculateTargetRect(RECT mediaMonitorRect, HWND mediaWindowHandle);
 	static void InternalDisplay(HWND windowHandle, RECT targetRect);	
 	static void ForceZoomWindowForeground(const HWND windowHandle);
+	static IUIAutomationElement* IdentifyFromMultipleCandidates(
+		IUIAutomationElementArray* foundElements, int elementCount, IUIAutomation* pAutomation);
 };
 

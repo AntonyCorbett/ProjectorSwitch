@@ -569,6 +569,14 @@ IUIAutomationElement* ZoomService::LocateZoomMediaWindow() const
 	}
 
 	// Multiple windows found - need to identify which is the main window
+	IUIAutomationElement *identifiedWindow = IdentifyFromMultipleCandidates(foundElements, elementCount, pAutomation);
+	foundElements->Release();
+	return identifiedWindow;
+}
+
+IUIAutomationElement* ZoomService::IdentifyFromMultipleCandidates(
+	IUIAutomationElementArray* foundElements, int elementCount, IUIAutomation* pAutomation)
+{
 	IUIAutomationElement* mediaWindow = nullptr;
 
 	for (int i = 0; i < elementCount; ++i)
@@ -579,31 +587,44 @@ IUIAutomationElement* ZoomService::LocateZoomMediaWindow() const
 			continue;
 		}
 
-		// Check if this window contains the MeetingTopBarInfoButton
-		VariantWrapper varHelpText;
-		varHelpText.SetString(L"MeetingTopBarInfoButton");
+		// Check if this window contains a control that identifies the conference window.
+		VariantWrapper varConfInfoHelpText;
+		varConfInfoHelpText.SetString(L"{\"controlID\":\"btn_conf_info\",\"isEnabled\":true}");
 
-		IUIAutomationCondition* helpTextCondition = nullptr;
-		pAutomation->CreatePropertyCondition(UIA_HelpTextPropertyId, *varHelpText, &helpTextCondition);
-		AutomationConditionWrapper helpTextConditionWrapper(helpTextCondition);
+		IUIAutomationCondition* confInfoHelpTextCondition = nullptr;
+		pAutomation->CreatePropertyCondition(UIA_HelpTextPropertyId, *varConfInfoHelpText, &confInfoHelpTextCondition);
+		AutomationConditionWrapper confInfoHelpTextConditionWrapper(confInfoHelpTextCondition);
+
+		VariantWrapper varConfTitleHelpText;
+		varConfTitleHelpText.SetString(L"{\"controlID\":\"conf_title\",\"isEnabled\":true}");
+
+		IUIAutomationCondition* confTitleHelpTextCondition = nullptr;
+		pAutomation->CreatePropertyCondition(UIA_HelpTextPropertyId, *varConfTitleHelpText, &confTitleHelpTextCondition);
+		AutomationConditionWrapper confTitleHelpTextConditionWrapper(confTitleHelpTextCondition);
+
+		IUIAutomationCondition* helpTextOrCondition = nullptr;
+		pAutomation->CreateOrCondition(
+			confInfoHelpTextConditionWrapper.GetCondition(),
+			confTitleHelpTextConditionWrapper.GetCondition(),
+			&helpTextOrCondition);
+		AutomationConditionWrapper helpTextOrConditionWrapper(helpTextOrCondition);
 
 		IUIAutomationElement* infoButton = nullptr;
-		const HRESULT hrFindButton = currentElement->FindFirst(TreeScope_Descendants, helpTextConditionWrapper.GetCondition(), &infoButton);
+		const HRESULT hrFindButton = currentElement->FindFirst(TreeScope_Descendants, helpTextOrConditionWrapper.GetCondition(), &infoButton);
 
 		if (SUCCEEDED(hrFindButton) && infoButton != nullptr)
 		{
-			// This is the main window (has the info button), so skip it
+			// This is the main window (has either conference control), so skip it
 			infoButton->Release();
 			currentElement->Release();
 		}
 		else
 		{
-			// This is the media window (doesn't have the info button)
+			// This is the media window (doesn't have the conference controls)
 			mediaWindow = currentElement;
 			break;
 		}
 	}
 
-	foundElements->Release();
 	return mediaWindow;
 }

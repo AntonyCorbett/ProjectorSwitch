@@ -2,11 +2,12 @@
 // Microsoft Visual C++ generated include file.
 // Used by ProjectorSwitch.rc
 //
+#define VS_VERSION_INFO                 1
 #define IDC_MYICON                      2
 #define IDS_APP_TITLE                   103
 #define IDM_ABOUT                       104
-#define IDI_PROJECTOR_SWITCH			107
-#define IDC_PROJECTOR_SWITCH			109
+#define IDI_PROJECTOR_SWITCH            107
+#define IDC_PROJECTOR_SWITCH            109
 #define IDR_MAINFRAME                   128
 #define IDC_STATIC                      -1
 
