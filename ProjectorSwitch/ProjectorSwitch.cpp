@@ -180,7 +180,7 @@ namespace
 	{
 		if (arg.empty()) return false;
 
-		constexpr MonitorService ms;
+		const MonitorService ms;
 		const auto monitors = ms.GetMonitorsData();
 		if (monitors.empty())
 		{
@@ -297,7 +297,7 @@ namespace
 	/// <param name="comboHandle">ComboBox handle</param>
 	void AddMonitorsToCombo(const HWND comboHandle)
 	{
-		constexpr MonitorService ms;
+		const MonitorService ms;
 		TheMonitorData = ms.GetMonitorsData();
 
 		for (const auto& i : TheMonitorData)

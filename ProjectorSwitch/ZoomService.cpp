@@ -145,7 +145,7 @@ DisplayWindowResult ZoomService::Toggle()
 /// </returns>
 RECT ZoomService::GetPrimaryMonitorRect()
 {
-	constexpr MonitorService monitorService;
+	const MonitorService monitorService;
 
 	const std::vector<MonitorData> monitorData = monitorService.GetMonitorsData();
 	for (auto& i : monitorData)
