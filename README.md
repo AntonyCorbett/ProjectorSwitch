@@ -1,6 +1,4 @@
-**May 2026 - Currently not working with the latest version of Zoom**
-
-Use ProjectorSwitch with the Zoom conferencing application on Windows to move the second Zoom window to a designated monitor and back to its original position.
+Use ProjectorSwitch with the Zoom conferencing application on Windows to move the second Zoom window to a designated monitor and back to its original position. We distinguish between the main Zoom window and the second window by the contents of the panels. The second window contains a single Video Pane, whereas the main window shows a gallery (usually). One of the quirks of this method is that if there is only a single zoom particpant, the main window also shows a single Video Pane and we can't differentiate between the two windows!
 
 Download ProjectorSwitch.exe into a folder and run it. Select the target monitor from the drop-down list and click the **Toggle** button to move the Zoom window to the chosen monitor. Click the button again to move it back.
 
@@ -27,4 +25,4 @@ Application logs are stored in the **Logs** folder (within your installation fol
 		ProjectorSwitch.exe --monitor MONITOR_KEY_STRING
 
 
-If you want to build from source, please place ApcLogger and ApcMonitorSource repositories side bu side with ProjectorSwitch. (https://github.com/AntonyCorbett/ApcLogger and https://github.com/AntonyCorbett/ApcMonitorCore)
+If you want to build from source, please place ApcLogger and ApcMonitorSource repositories side by side with ProjectorSwitch. (https://github.com/AntonyCorbett/ApcLogger and https://github.com/AntonyCorbett/ApcMonitorCore)
