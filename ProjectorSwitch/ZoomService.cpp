@@ -542,6 +542,8 @@ IUIAutomationElement* ZoomService::LocateZoomMediaWindow() const
 		&andCondition);
 	AutomationConditionWrapper andConditionWrapper(andCondition);
 
+	// get all desktop child windows matching the name/class condition - there may 
+	// be multiple, we will identify the correct one in a moment
 	IUIAutomationElementArray* foundElements = nullptr;
 	const HRESULT hrFindAll = cachedDesktopWindow_->FindAll(TreeScope_Children, andConditionWrapper.GetCondition(), &foundElements);
 
