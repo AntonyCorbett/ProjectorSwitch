@@ -9,7 +9,8 @@
 
 namespace
 {
-	const std::wstring ZoomProcessName = L"Zoom.exe";
+	// ReSharper disable once CppVariableCanBeMadeConstexpr
+	const std::wstring ZoomProcessName = L"Zoom.exe";  // NOLINT(bugprone-throwing-static-initialization)
 }
 
 /// <summary>
@@ -216,6 +217,7 @@ void ZoomService::InternalHide(const HWND windowHandle)
 		// Place the window's normal (restore) position on the primary monitor so future restores happen there.
 		const RECT primaryMonitorRect = GetPrimaryMonitorRect();
 
+		// ReSharper disable once CppInitializedValueIsAlwaysRewritten
 		RECT restoreRect{};
 		restoreRect.left = primaryMonitorRect.left + 10;
 		restoreRect.top = primaryMonitorRect.top + 10;
@@ -279,7 +281,7 @@ void ZoomService::ForceZoomWindowForeground(const HWND windowHandle)
 	const DWORD fgThread = fg ? GetWindowThreadProcessId(fg, nullptr) : 0;
 	const DWORD targetThread = GetWindowThreadProcessId(windowHandle, nullptr);
 
-	struct AttachGuard  // NOLINT(cppcoreguidelines-special-member-functions)
+	struct AttachGuard  // NOLINT(cppcoreguidelines-special-member-functions, clang-diagnostic-padded)
 	{
 		DWORD Current{};
 		DWORD ForegroundThread{};
@@ -576,9 +578,19 @@ IUIAutomationElement* ZoomService::LocateZoomMediaWindow() const
 	return identifiedWindow;
 }
 
+// we have found multiple windows matching the name/class, so we need to identify which one is the media window.
+// We choose the window which has a single "Zoom Video Container" descendant, as the main window has a "Gallery Video" pane
+// instead of a "Zoom Video Container" descendant when the meeting is in gallery view and there is more than 1 participant.
 IUIAutomationElement* ZoomService::IdentifyFromMultipleCandidates(
 	IUIAutomationElementArray* foundElements, int elementCount, IUIAutomation* pAutomation)
 {
+	VariantWrapper varVideoContainerClass;
+	varVideoContainerClass.SetString(L"VideoContainerWndClass");
+
+	IUIAutomationCondition* videoContainerCondition = nullptr;
+	pAutomation->CreatePropertyCondition(UIA_ClassNamePropertyId, *varVideoContainerClass, &videoContainerCondition);
+	AutomationConditionWrapper videoContainerConditionWrapper(videoContainerCondition);
+
 	IUIAutomationElement* mediaWindow = nullptr;
 
 	for (int i = 0; i < elementCount; ++i)
@@ -589,42 +601,31 @@ IUIAutomationElement* ZoomService::IdentifyFromMultipleCandidates(
 			continue;
 		}
 
-		// Check if this window contains a control that identifies the conference window.
-		VariantWrapper varConfInfoHelpText;
-		varConfInfoHelpText.SetString(L"{\"controlID\":\"btn_conf_info\",\"isEnabled\":true}");
+		IUIAutomationElementArray* containers = nullptr;
+		int containerCount = 0;
+		const HRESULT hr = currentElement->FindAll(
+			TreeScope_Descendants, videoContainerConditionWrapper.GetCondition(), &containers);
 
-		IUIAutomationCondition* confInfoHelpTextCondition = nullptr;
-		pAutomation->CreatePropertyCondition(UIA_HelpTextPropertyId, *varConfInfoHelpText, &confInfoHelpTextCondition);
-		AutomationConditionWrapper confInfoHelpTextConditionWrapper(confInfoHelpTextCondition);
-
-		VariantWrapper varConfTitleHelpText;
-		varConfTitleHelpText.SetString(L"{\"controlID\":\"conf_title\",\"isEnabled\":true}");
-
-		IUIAutomationCondition* confTitleHelpTextCondition = nullptr;
-		pAutomation->CreatePropertyCondition(UIA_HelpTextPropertyId, *varConfTitleHelpText, &confTitleHelpTextCondition);
-		AutomationConditionWrapper confTitleHelpTextConditionWrapper(confTitleHelpTextCondition);
-
-		IUIAutomationCondition* helpTextOrCondition = nullptr;
-		pAutomation->CreateOrCondition(
-			confInfoHelpTextConditionWrapper.GetCondition(),
-			confTitleHelpTextConditionWrapper.GetCondition(),
-			&helpTextOrCondition);
-		AutomationConditionWrapper helpTextOrConditionWrapper(helpTextOrCondition);
-
-		IUIAutomationElement* infoButton = nullptr;
-		const HRESULT hrFindButton = currentElement->FindFirst(TreeScope_Descendants, helpTextOrConditionWrapper.GetCondition(), &infoButton);
-
-		if (SUCCEEDED(hrFindButton) && infoButton != nullptr)
+		if (SUCCEEDED(hr) && containers != nullptr)
 		{
-			// This is the main window (has either conference control), so skip it
-			infoButton->Release();
-			currentElement->Release();
+			containers->get_Length(&containerCount);
+			containers->Release();
+		}
+
+		if (containerCount == 1)
+		{
+			if (mediaWindow != nullptr)
+			{
+				// More than one candidate has exactly one container - ambiguous.
+				mediaWindow->Release();
+				currentElement->Release();
+				return nullptr;
+			}
+			mediaWindow = currentElement;
 		}
 		else
 		{
-			// This is the media window (doesn't have the conference controls)
-			mediaWindow = currentElement;
-			break;
+			currentElement->Release();
 		}
 	}
 
