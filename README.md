@@ -1,3 +1,5 @@
+**May 2026 - Currently not working with the latest version of Zoom**
+
 Use ProjectorSwitch with the Zoom conferencing application on Windows to move the second Zoom window to a designated monitor and back to its original position.
 
 Download ProjectorSwitch.exe into a folder and run it. Select the target monitor from the drop-down list and click the **Toggle** button to move the Zoom window to the chosen monitor. Click the button again to move it back.
