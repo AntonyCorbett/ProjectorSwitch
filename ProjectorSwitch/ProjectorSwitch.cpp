@@ -44,7 +44,7 @@ namespace
 	HWND MainWindowHandle;
 	std::vector<MonitorData> TheMonitorData;
 	std::unique_ptr<ZoomService> TheZoomService;
-	const std::wstring AppName = L"ApcProjSw";
+	static constexpr auto AppName = L"ApcProjSw";
 	UINT CurrentDpi = BaseDpi;
 
 	struct CommandLineOptions
@@ -427,7 +427,17 @@ namespace
 		if (TheZoomService)
 		{
 			LOG_INFO(L"Toggling Zoom window");
-			TheZoomService->Toggle();
+			const DisplayWindowResult result = TheZoomService->Toggle();
+
+			if (!result.ErrorMessage.empty())
+			{
+				LOG_WARN(L"Toggle failed: %ls", result.ErrorMessage.c_str());
+				MessageBoxW(
+					MainWindowHandle,
+					result.ErrorMessage.c_str(),
+					L"ProjectorSwitch",
+					MB_OK | MB_ICONWARNING | MB_SETFOREGROUND);
+			}
 
 			// Keep window topmost after toggling
 			SetWindowPos(MainWindowHandle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
@@ -724,7 +734,7 @@ int APIENTRY wWinMain(
 	}
 
 	// Single-instance guard
-	CHandle appMutex(CreateMutex(nullptr, TRUE, AppName.c_str()));
+	CHandle appMutex(CreateMutex(nullptr, TRUE, AppName));
 	if (GetLastError() == ERROR_ALREADY_EXISTS)
 	{
 		LOG_WARN(L"Another instance is already running");

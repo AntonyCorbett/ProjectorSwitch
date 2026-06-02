@@ -493,7 +493,8 @@ FindWindowsResult ZoomService::FindMediaWindow()
 
 	result.IsRunning = true;
 
-	IUIAutomationElement* mediaWindow = LocateZoomMediaWindow();
+	std::wstring locateError;
+	IUIAutomationElement* mediaWindow = LocateZoomMediaWindow(locateError);
 	if (mediaWindow != nullptr)
 	{
 		result.Element = mediaWindow;
@@ -501,6 +502,11 @@ FindWindowsResult ZoomService::FindMediaWindow()
 	}
 	else
 	{
+		// Zoom processes are running but no media window was found.
+		// An empty locateError means no matching windows existed (no active meeting).
+		// A non-empty locateError carries a more specific reason (e.g. version mismatch,
+		// ambiguous candidates).
+		result.BespokeErrorMsg = locateError.empty() ? L"No Zoom meeting in progress." : locateError;
 		OutputDebugString(L"Could not get Zoom window!");
 	}
 
@@ -511,8 +517,9 @@ FindWindowsResult ZoomService::FindMediaWindow()
 /// Attempts to locate the Zoom media window by finding all windows with matching name/class
 /// and identifying the main window by the presence of "MeetingTopBarInfoButton".
 /// </summary>
+/// <param name="errorMsg">Receives a description of why the window could not be found, if applicable.</param>
 /// <returns>An IUIAutomationElement representing the Zoom media window, or nullptr if not found.</returns>
-IUIAutomationElement* ZoomService::LocateZoomMediaWindow() const
+IUIAutomationElement* ZoomService::LocateZoomMediaWindow(std::wstring& errorMsg) const
 {
 	if (cachedDesktopWindow_ == nullptr)
 	{
@@ -552,6 +559,8 @@ IUIAutomationElement* ZoomService::LocateZoomMediaWindow() const
 
 	if (FAILED(hrFindAll) || foundElements == nullptr)
 	{
+		// FindAll failure suggests an incompatible Zoom version changed the window class/name.
+		errorMsg = L"Zoom version not supported.";
 		return nullptr;
 	}
 
@@ -561,6 +570,8 @@ IUIAutomationElement* ZoomService::LocateZoomMediaWindow() const
 	if (elementCount == 0)
 	{
 		foundElements->Release();
+		// No matching windows — leave errorMsg empty so the caller can set the right message
+		// based on whether Zoom processes were found (no meeting) or not (not running).
 		return nullptr;
 	}
 
@@ -574,7 +585,7 @@ IUIAutomationElement* ZoomService::LocateZoomMediaWindow() const
 	}
 
 	// Multiple windows found - need to identify which is the main window
-	IUIAutomationElement *identifiedWindow = IdentifyFromMultipleCandidates(foundElements, elementCount, pAutomation);
+	IUIAutomationElement* identifiedWindow = IdentifyFromMultipleCandidates(foundElements, elementCount, pAutomation, errorMsg);
 	foundElements->Release();
 	return identifiedWindow;
 }
@@ -583,7 +594,8 @@ IUIAutomationElement* ZoomService::LocateZoomMediaWindow() const
 // We choose the window which has a single "Zoom Video Container" descendant, as the main window has a "Gallery Video" pane
 // instead of a "Zoom Video Container" descendant when the meeting is in gallery view and there is more than 1 participant.
 IUIAutomationElement* ZoomService::IdentifyFromMultipleCandidates(
-	IUIAutomationElementArray* foundElements, int elementCount, IUIAutomation* pAutomation)
+	IUIAutomationElementArray* foundElements, int elementCount, IUIAutomation* pAutomation,
+	std::wstring& errorMsg)
 {
 	VariantWrapper varVideoContainerClass;
 	varVideoContainerClass.SetString(L"VideoContainerWndClass");
@@ -617,9 +629,12 @@ IUIAutomationElement* ZoomService::IdentifyFromMultipleCandidates(
 		{
 			if (mediaWindow != nullptr)
 			{
-				// More than one candidate has exactly one container - ambiguous.
+				// More than one candidate has exactly one video container. This is likely because there is only 1 person on the conference.
+				// In this case, the main window and the settings window are indistinguishable by our criteria, so we cannot reliably identify
+				// the media window.
 				mediaWindow->Release();
 				currentElement->Release();
+				errorMsg = L"Only one person on conference.";
 				return nullptr;
 			}
 			mediaWindow = currentElement;
@@ -628,6 +643,11 @@ IUIAutomationElement* ZoomService::IdentifyFromMultipleCandidates(
 		{
 			currentElement->Release();
 		}
+	}
+
+	if (mediaWindow == nullptr)
+	{
+		errorMsg = L"Could not identify Zoom media window.";
 	}
 
 	return mediaWindow;

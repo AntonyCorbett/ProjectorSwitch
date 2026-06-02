@@ -20,15 +20,16 @@ private:
 	ProcessesService* processesService_;		
 		
 	FindWindowsResult FindMediaWindow();
-	IUIAutomationElement* LocateZoomMediaWindow() const;	
+	IUIAutomationElement* LocateZoomMediaWindow(std::wstring& errorMsg) const;
 	void InternalHide(HWND windowHandle);
 
 	static RECT GetTargetMonitorRect();
 	static RECT GetPrimaryMonitorRect();
 	static RECT CalculateTargetRect(RECT mediaMonitorRect, HWND mediaWindowHandle);
-	static void InternalDisplay(HWND windowHandle, RECT targetRect);	
+	static void InternalDisplay(HWND windowHandle, RECT targetRect);
 	static void ForceZoomWindowForeground(const HWND windowHandle);
 	static IUIAutomationElement* IdentifyFromMultipleCandidates(
-		IUIAutomationElementArray* foundElements, int elementCount, IUIAutomation* pAutomation);
+		IUIAutomationElementArray* foundElements, int elementCount, IUIAutomation* pAutomation,
+		std::wstring& errorMsg);
 };
 
