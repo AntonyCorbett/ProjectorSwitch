@@ -487,6 +487,7 @@ FindWindowsResult ZoomService::FindMediaWindow()
 
 	if (zoomProcesses.empty())
 	{
+		result.BespokeErrorMsg = L"Zoom process not found.";
 		return result;
 	}
 
