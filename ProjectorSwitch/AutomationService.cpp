@@ -71,7 +71,7 @@ void AutomationService::LocateDesktop()
 	HRESULT hr = automation_->GetRootElement(&desktopElement_);
 	if (!SUCCEEDED(hr))
 	{
-		OutputDebugString(L"Could not get desktop element!");
+		OutputDebugString(L"Could not get desktop element!\n");
 		desktopElement_ = nullptr;
 	}
 }

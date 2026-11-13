@@ -507,7 +507,7 @@ FindWindowsResult ZoomService::FindMediaWindow()
 		// A non-empty locateError carries a more specific reason (e.g. version mismatch,
 		// ambiguous candidates).
 		result.BespokeErrorMsg = locateError.empty() ? L"No Zoom meeting in progress." : locateError;
-		OutputDebugString(L"Could not get Zoom window!");
+		OutputDebugString(L"Could not get Zoom window!\n");
 	}
 
 	return result;

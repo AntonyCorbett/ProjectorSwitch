@@ -15,7 +15,7 @@ std::vector<std::unique_ptr<void, HandleDeleter>> ProcessesService::GetProcesses
 	const HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
 	if (snapshot == INVALID_HANDLE_VALUE)
 	{
-		OutputDebugString(L"Could not get process snapshot!");
+		OutputDebugString(L"Could not get process snapshot!\n");
 		return result;
 	}
 
